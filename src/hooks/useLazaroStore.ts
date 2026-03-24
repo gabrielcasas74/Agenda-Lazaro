@@ -27,6 +27,14 @@ export function useLazaroStore() {
     );
   }
 
+  function guardarResena(clienteId: string, resena: string) {
+    setClientes(prev =>
+      (Array.isArray(prev) ? prev : []).map(c =>
+        c.id === clienteId ? { ...c, resena } : c
+      )
+    );
+  }
+
   function getCliente(id: string): Cliente | undefined {
     return (Array.isArray(clientes) ? clientes : []).find(c => c.id === id);
   }
@@ -48,7 +56,6 @@ export function useLazaroStore() {
     const citaId = generarId();
     let clienteId = '';
 
-    // Operación atómica: crear o actualizar cliente en un solo setClientes
     setClientes(prev => {
       const arr = Array.isArray(prev) ? prev : [];
       const existente = arr.find(c => c.telefono === datos.clienteTelefono);
@@ -151,16 +158,7 @@ export function useLazaroStore() {
       .filter(c => c.estado === 'confirmada' && new Date(c.fecha) >= new Date(hoy.toDateString()))
       .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
 
-  
-  function guardarResena(clienteId: string, resena: string) {
-    setClientes(prev =>
-      (Array.isArray(prev) ? prev : []).map(c =>
-        c.id === clienteId ? { ...c, resena } : c
-      )
-    );
-  }
-
-  return {
+    return {
       totalClientes: clientesArr.length,
       clientesRepiten,
       citasSemana: citasSemana.length,
@@ -175,6 +173,7 @@ export function useLazaroStore() {
     citas: Array.isArray(citas) ? citas : [],
     notas: Array.isArray(notas) ? notas : [],
     actualizarTagsCliente,
+    guardarResena,
     getCliente,
     agregarCita,
     completarCita,
@@ -183,6 +182,5 @@ export function useLazaroStore() {
     getNotasDeCliente,
     getNotasDeCita,
     getStats,
-    guardarResena,
   };
 }
