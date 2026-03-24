@@ -195,6 +195,5 @@ export function useLazaroStore() {
     getNotasDeCita,
     // stats
     getStats,
-    editarCliente,
   };
 }
