@@ -186,5 +186,3 @@ export function useLazaroStore() {
     guardarResena,
   };
 }
-
-// Exportar guardarResena — se agrega al return del hook

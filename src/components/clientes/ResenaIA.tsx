@@ -80,7 +80,7 @@ Reseña esotérica:`;
         )}
       </div>
 
-      {yaiente ? (
+      {yatiene ? (
         <div style={{
           background: 'var(--bg-surface)',
           border: '1px solid var(--border)',
