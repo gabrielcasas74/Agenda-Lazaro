@@ -1,23 +1,29 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+export const config = { runtime: 'edge' };
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: 'GEMINI_API_KEY no configurada en Vercel Environment Variables' });
+    return new Response(JSON.stringify({ error: 'GEMINI_API_KEY no configurada' }), { status: 500 });
   }
 
-  const { prompt } = req.body ?? {};
-  if (!prompt) {
-    return res.status(400).json({ error: 'Falta el campo prompt en el body' });
-  }
-
-  let geminiResponse: Response;
+  let prompt = '';
   try {
-    geminiResponse = await fetch(
+    const body = await req.json();
+    prompt = body.prompt ?? '';
+  } catch {
+    return new Response(JSON.stringify({ error: 'Body inválido' }), { status: 400 });
+  }
+
+  if (!prompt) {
+    return new Response(JSON.stringify({ error: 'Falta el prompt' }), { status: 400 });
+  }
+
+  try {
+    const geminiRes = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
@@ -28,28 +34,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }),
       }
     );
-  } catch (fetchErr: any) {
-    return res.status(500).json({ error: `Error de red al llamar Gemini: ${fetchErr.message}` });
-  }
 
-  if (!geminiResponse.ok) {
-    const errText = await geminiResponse.text();
-    return res.status(geminiResponse.status).json({
-      error: `Gemini respondió ${geminiResponse.status}: ${errText.slice(0, 200)}`,
+    if (!geminiRes.ok) {
+      const errText = await geminiRes.text();
+      return new Response(
+        JSON.stringify({ error: `Gemini ${geminiRes.status}: ${errText.slice(0, 200)}` }),
+        { status: 500 }
+      );
+    }
+
+    const data = await geminiRes.json();
+    const texto = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+
+    if (!texto) {
+      return new Response(
+        JSON.stringify({ error: `Sin texto. Respuesta: ${JSON.stringify(data).slice(0, 200)}` }),
+        { status: 500 }
+      );
+    }
+
+    return new Response(JSON.stringify({ texto }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
     });
-  }
 
-  let data: any;
-  try {
-    data = await geminiResponse.json();
-  } catch {
-    return res.status(500).json({ error: 'No se pudo parsear la respuesta de Gemini' });
+  } catch (e: any) {
+    return new Response(JSON.stringify({ error: e.message }), { status: 500 });
   }
-
-  const texto = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-  if (!texto) {
-    return res.status(500).json({ error: `Gemini no devolvió texto. Respuesta: ${JSON.stringify(data).slice(0, 200)}` });
-  }
-
-  return res.status(200).json({ texto });
 }
