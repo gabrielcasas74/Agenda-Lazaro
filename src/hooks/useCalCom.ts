@@ -70,7 +70,7 @@ export function useCalCom() {
     setError('');
 
     try {
-      const url = `${CAL_API_BASE}/bookings?apiKey=${CAL_API_KEY}&status=accepted`;
+      const url = `${CAL_API_BASE}/bookings?apiKey=${CAL_API_KEY}&status=upcoming`;
       const res = await fetch(url);
 
       if (!res.ok) {
