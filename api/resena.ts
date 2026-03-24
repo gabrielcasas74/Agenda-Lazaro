@@ -5,9 +5,9 @@ export default async function handler(req: Request): Promise<Response> {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'GEMINI_API_KEY no configurada' }), { status: 500 });
+    return new Response(JSON.stringify({ error: 'GROQ_API_KEY no configurada en Vercel' }), { status: 500 });
   }
 
   let prompt = '';
@@ -23,28 +23,30 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   try {
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 300, temperature: 0.85 },
-        }),
-      }
-    );
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-8b-instant',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 300,
+        temperature: 0.85,
+      }),
+    });
 
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text();
+    if (!response.ok) {
+      const errText = await response.text();
       return new Response(
-        JSON.stringify({ error: `Gemini ${geminiRes.status}: ${errText.slice(0, 200)}` }),
+        JSON.stringify({ error: `Groq ${response.status}: ${errText.slice(0, 200)}` }),
         { status: 500 }
       );
     }
 
-    const data = await geminiRes.json();
-    const texto = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    const data = await response.json();
+    const texto = data.choices?.[0]?.message?.content ?? '';
 
     if (!texto) {
       return new Response(
