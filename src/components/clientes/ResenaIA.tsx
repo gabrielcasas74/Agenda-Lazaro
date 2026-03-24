@@ -39,22 +39,18 @@ Productos/trabajos realizados: ${productos}
 Reseña esotérica:`;
 
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetch('/api/resena', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          messages: [{ role: 'user', content: prompt }],
-        }),
+        body: JSON.stringify({ prompt }),
       });
 
       const data = await response.json();
-      const texto = data.content?.find((b: any) => b.type === 'text')?.text ?? '';
-      if (!texto) throw new Error('Sin respuesta');
-      onGuardar(texto.trim());
-    } catch (e) {
-      setError('No se pudo generar la reseña. Verificá la conexión.');
+      if (!response.ok) throw new Error(data.error ?? 'Error del servidor');
+      if (!data.texto) throw new Error('Sin respuesta');
+      onGuardar(data.texto.trim());
+    } catch (e: any) {
+      setError(e.message ?? 'No se pudo generar la reseña.');
     } finally {
       setGenerando(false);
     }

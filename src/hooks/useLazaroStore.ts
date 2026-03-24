@@ -107,6 +107,19 @@ export function useLazaroStore() {
     ));
   }
 
+
+  function cancelarCita(citaId: string) {
+    setCitas(prev =>
+      (Array.isArray(prev) ? prev : []).map(c =>
+        c.id === citaId ? { ...c, estado: 'cancelada' as const } : c
+      )
+    );
+  }
+
+  function eliminarCita(citaId: string) {
+    setCitas(prev => (Array.isArray(prev) ? prev : []).filter(c => c.id !== citaId));
+  }
+
   function completarCita(citaId: string) {
     setCitas(prev => arr<Cita>(prev).map(c =>
       c.id === citaId ? { ...c, estado: 'completada' as const } : c
@@ -187,6 +200,8 @@ export function useLazaroStore() {
     // citas
     agregarCita,
     editarCita,
+    cancelarCita,
+    eliminarCita,
     completarCita,
     getCitasDeCliente,
     // notas

@@ -69,21 +69,38 @@ export function PantallaCitas({ store }: { store: Store }) {
           <span style={{ fontFamily: 'Cinzel, serif', fontSize: 13, color: 'var(--gold)' }}>
             {formatColones(cita.precio)}
           </span>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             <button className="btn-ghost" style={{ fontSize: 11 }}
               onClick={() => setEditandoCita(cita.id)}>
               Editar
             </button>
             {cita.estado === 'confirmada' && (
-              <button className="btn-ghost" onClick={() => store.completarCita(cita.id)}>
-                Marcar completada
-              </button>
+              <>
+                <button className="btn-ghost" onClick={() => store.completarCita(cita.id)}>
+                  Completada
+                </button>
+                <button className="btn-ghost"
+                  style={{ fontSize: 11, color: 'var(--coral)', borderColor: 'rgba(158,74,58,0.3)' }}
+                  onClick={() => store.cancelarCita(cita.id)}>
+                  Cancelar
+                </button>
+              </>
             )}
             {cita.estado === 'completada' && (
               <span style={{ fontSize: 11, color: 'var(--teal)', letterSpacing: '0.04em' }}>
                 Completada
               </span>
             )}
+            {cita.estado === 'cancelada' && (
+              <span style={{ fontSize: 11, color: 'var(--coral)', letterSpacing: '0.04em' }}>
+                Cancelada
+              </span>
+            )}
+            <button className="btn-ghost"
+              style={{ fontSize: 11, color: 'var(--danger)', borderColor: 'rgba(158,48,48,0.3)' }}
+              onClick={() => { if (confirm('¿Eliminar esta cita? Esta acción no se puede deshacer.')) store.eliminarCita(cita.id); }}>
+              Eliminar
+            </button>
           </div>
         </div>
       </div>
