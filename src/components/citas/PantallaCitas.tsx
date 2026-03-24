@@ -1,3 +1,4 @@
+import { SincronizarCalCom } from './SincronizarCalCom';
 import { useState } from 'react';
 import type { useLazaroStore } from '../../hooks/useLazaroStore';
 import { SERVICIOS } from '../../types';
@@ -5,12 +6,67 @@ import { formatColones, formatFecha, formatHora, agruparCitasPorFecha } from '..
 import { NuevaCitaForm } from './NuevaCitaForm';
 
 type Store = ReturnType<typeof useLazaroStore>;
+type Vista = 'proximas' | 'historial';
 
 export function PantallaCitas({ store }: { store: Store }) {
   const [mostrarForm, setMostrarForm] = useState(false);
+  const [vista, setVista] = useState<Vista>('proximas');
   const stats = store.getStats();
-  const citasAgrupadas = agruparCitasPorFecha(stats.proximasCitas);
+
+  const citasArr = Array.isArray(store.citas) ? store.citas : [];
+
+  // Fecha de hoy sin hora para comparación limpia
+  const hoyStr = new Date().toISOString().split('T')[0];
+
+  const proximas = citasArr
+    .filter(c => c.estado === 'confirmada' && c.fecha >= hoyStr)
+    .sort((a, b) => a.fecha.localeCompare(b.fecha) || a.hora.localeCompare(b.hora));
+
+  const historial = citasArr
+    .filter(c => c.estado === 'completada' || c.fecha < hoyStr)
+    .sort((a, b) => b.fecha.localeCompare(a.fecha));
+
+  const citasAgrupadas = agruparCitasPorFecha(proximas);
   const fechas = Object.keys(citasAgrupadas).sort();
+
+  function CitaCard({ cita }: { cita: typeof citasArr[0] }) {
+    return (
+      <div className="cita-card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+          <span style={{ fontFamily: 'Cinzel, serif', fontSize: 14, color: 'var(--text-primary)', letterSpacing: '0.03em' }}>
+            {cita.clienteNombre}
+          </span>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <span className={`badge badge-${cita.modalidad}`}>
+              {cita.modalidad === 'presencial' ? 'Presencial' : 'Virtual'}
+            </span>
+            <span className={`badge badge-${cita.tipo}`}>
+              {SERVICIOS[cita.tipo].nombre} · {SERVICIOS[cita.tipo].duracion} min
+            </span>
+          </div>
+        </div>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 2 }}>
+          {formatHora(cita.hora)} · {cita.clienteFechaNacimiento} · {cita.clienteTelefono}
+        </p>
+        {cita.intencion && (
+          <p className="intencion">"{cita.intencion}"</p>
+        )}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+          <span style={{ fontFamily: 'Cinzel, serif', fontSize: 13, color: 'var(--gold)' }}>
+            {formatColones(cita.precio)}
+          </span>
+          {cita.estado === 'confirmada' && (
+            <button className="btn-ghost" onClick={() => store.completarCita(cita.id)}>
+              Marcar completada
+            </button>
+          )}
+          {cita.estado === 'completada' && (
+            <span style={{ fontSize: 11, color: 'var(--teal)', letterSpacing: '0.04em' }}>Completada</span>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -28,62 +84,82 @@ export function PantallaCitas({ store }: { store: Store }) {
         ))}
       </div>
 
-      {/* Botón nueva cita */}
-      <button className="btn-primary" style={{ marginBottom: '1.5rem' }} onClick={() => setMostrarForm(v => !v)}>
-        {mostrarForm ? 'Cancelar' : '+ Registrar cita manualmente'}
-      </button>
+      {/* Sincronizar Cal.com */}
+      <SincronizarCalCom store={store} />
 
+      {/* Sub-nav: Próximas / Historial */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: '1.25rem' }}>
+        {([
+          { id: 'proximas',  label: `Próximas (${proximas.length})` },
+          { id: 'historial', label: `Historial (${historial.length})` },
+        ] as { id: Vista; label: string }[]).map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setVista(tab.id)}
+            style={{
+              fontSize: 12, padding: '5px 14px', borderRadius: 20,
+              border: '1px solid',
+              borderColor: vista === tab.id ? 'var(--purple)' : 'var(--border-dim)',
+              background: vista === tab.id ? 'var(--purple-bg)' : 'transparent',
+              color: vista === tab.id ? 'var(--purple)' : 'var(--text-muted)',
+              cursor: 'pointer', transition: 'all .15s',
+              fontWeight: vista === tab.id ? 700 : 400,
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+        <button
+          className="btn-ghost"
+          style={{ marginLeft: 'auto', fontSize: 12 }}
+          onClick={() => setMostrarForm(v => !v)}
+        >
+          {mostrarForm ? 'Cancelar' : '+ Nueva cita'}
+        </button>
+      </div>
+
+      {/* Form nueva cita */}
       {mostrarForm && (
         <div style={{ marginBottom: '1.5rem' }}>
           <NuevaCitaForm onGuardar={datos => { store.agregarCita(datos); setMostrarForm(false); }} />
         </div>
       )}
 
-      {/* Lista */}
-      {fechas.length === 0 && (
-        <p className="font-serif" style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2.5rem 0', fontStyle: 'italic', fontSize: 16 }}>
-          No hay citas próximas registradas.
-        </p>
-      )}
-
-      {fechas.map(fecha => (
-        <div key={fecha} style={{ marginBottom: '1.25rem' }}>
-          <p className="section-label" style={{ marginBottom: 10 }}>
-            {formatFecha(fecha + 'T12:00:00')}
-          </p>
-          {citasAgrupadas[fecha].map(cita => (
-            <div key={cita.id} className="cita-card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <span style={{ fontFamily: 'Cinzel, serif', fontSize: 14, color: 'var(--text-primary)', letterSpacing: '0.03em' }}>
-                  {cita.clienteNombre}
-                </span>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <span className={`badge badge-${cita.modalidad}`}>
-                    {cita.modalidad === 'presencial' ? 'Presencial' : 'Virtual'}
-                  </span>
-                  <span className={`badge badge-${cita.tipo}`}>
-                    {SERVICIOS[cita.tipo].nombre} · {SERVICIOS[cita.tipo].duracion} min
-                  </span>
-                </div>
-              </div>
-              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 2 }}>
-                {formatHora(cita.hora)} · {cita.clienteFechaNacimiento} · {cita.clienteTelefono}
-              </p>
-              {cita.intencion && (
-                <p className="intencion">"{cita.intencion}"</p>
-              )}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
-                <span style={{ fontFamily: 'Cinzel, serif', fontSize: 13, color: 'var(--gold)' }}>
-                  {formatColones(cita.precio)}
-                </span>
-                <button className="btn-ghost" onClick={() => store.completarCita(cita.id)}>
-                  Marcar completada
-                </button>
-              </div>
+      {/* VISTA: PRÓXIMAS */}
+      {vista === 'proximas' && (
+        <>
+          {fechas.length === 0 && (
+            <p className="font-serif" style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2.5rem 0', fontStyle: 'italic', fontSize: 16 }}>
+              No hay citas próximas registradas.
+            </p>
+          )}
+          {fechas.map(fecha => (
+            <div key={fecha} style={{ marginBottom: '1.25rem' }}>
+              <p className="section-label">{formatFecha(fecha + 'T12:00:00')}</p>
+              {citasAgrupadas[fecha].map(cita => <CitaCard key={cita.id} cita={cita} />)}
             </div>
           ))}
-        </div>
-      ))}
+        </>
+      )}
+
+      {/* VISTA: HISTORIAL */}
+      {vista === 'historial' && (
+        <>
+          {historial.length === 0 && (
+            <p className="font-serif" style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2.5rem 0', fontStyle: 'italic', fontSize: 16 }}>
+              Sin historial aún.
+            </p>
+          )}
+          {historial.map(cita => (
+            <div key={cita.id} style={{ marginBottom: 8 }}>
+              <p className="section-label" style={{ marginBottom: 4 }}>
+                {formatFecha(cita.fecha + 'T12:00:00')}
+              </p>
+              <CitaCard cita={cita} />
+            </div>
+          ))}
+        </>
+      )}
     </div>
   );
 }
