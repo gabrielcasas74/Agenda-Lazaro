@@ -6,12 +6,14 @@ import {
   getIniciales, calcularArcano, descargarICS,
 } from '../../utils';
 import { ResenaIA } from './ResenaIA';
+import { EditarClienteForm } from './EditarClienteForm';
 
 interface Props {
   cliente: Cliente; citas: Cita[]; notas: NotaSesion[];
   onAgregarNota: (citaId: string, texto: string) => void;
   onActualizarTags: (campo: 'intereses' | 'nombresImportantes' | 'productosTrabajos', tags: string[]) => void;
   onGuardarResena: (resena: string) => void;
+  onEditarCliente: (datos: Partial<Cliente>) => void;
   onVolver: () => void;
 }
 
@@ -28,6 +30,7 @@ export function FichaCliente({ cliente, citas, notas, onAgregarNota, onActualiza
   const [citaSeleccionada, setCitaSeleccionada] = useState(citas[0]?.id ?? '');
   const [nuevoTag, setNuevoTag] = useState<Record<TagCampo, string>>({ intereses: '', nombresImportantes: '', productosTrabajos: '' });
   const [editandoTag, setEditandoTag] = useState<TagCampo | null>(null);
+  const [editandoDatos, setEditandoDatos] = useState(false);
 
   const signo  = getSigno(cliente.fechaNacimiento);
   const arcano = calcularArcano(cliente.fechaNacimiento);
@@ -53,7 +56,10 @@ export function FichaCliente({ cliente, citas, notas, onAgregarNota, onActualiza
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: '1.5rem' }}>
         <div className="avatar" style={{ width: 50, height: 50, fontSize: 15 }}>{getIniciales(cliente.nombre)}</div>
         <div style={{ flex: 1 }}>
-          <h2 className="font-display" style={{ fontSize: 16, color: 'var(--text-primary)', letterSpacing: '0.05em', marginBottom: 3 }}>{cliente.nombre}</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <h2 className="font-display" style={{ fontSize: 16, color: 'var(--text-primary)', letterSpacing: '0.05em' }}>{cliente.nombre}</h2>
+            <button className="btn-ghost" style={{ fontSize: 11, padding: '2px 10px' }} onClick={() => setEditandoDatos(true)}>Editar</button>
+          </div>
           <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Desde {formatFechaCorta(cliente.creadoEn)} · {cliente.totalCitas} consulta{cliente.totalCitas !== 1 ? 's' : ''}</p>
         </div>
         <div style={{ textAlign: 'right' }}>
@@ -61,6 +67,15 @@ export function FichaCliente({ cliente, citas, notas, onAgregarNota, onActualiza
           <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>acumulado</p>
         </div>
       </div>
+
+      {/* Form editar cliente */}
+      {editandoDatos && (
+        <EditarClienteForm
+          cliente={cliente}
+          onGuardar={datos => { onEditarCliente(datos); setEditandoDatos(false); }}
+          onCancelar={() => setEditandoDatos(false)}
+        />
+      )}
 
       {/* Datos + perfil esotérico */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: '1rem' }}>

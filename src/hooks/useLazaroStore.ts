@@ -27,6 +27,23 @@ export function useLazaroStore() {
     );
   }
 
+
+  function editarCita(citaId: string, datos: Partial<Cita>) {
+    setCitas(prev =>
+      (Array.isArray(prev) ? prev : []).map(c =>
+        c.id === citaId ? { ...c, ...datos } : c
+      )
+    );
+  }
+
+  function editarCliente(clienteId: string, datos: Partial<Cliente>) {
+    setClientes(prev =>
+      (Array.isArray(prev) ? prev : []).map(c =>
+        c.id === clienteId ? { ...c, ...datos } : c
+      )
+    );
+  }
+
   function guardarResena(clienteId: string, resena: string) {
     setClientes(prev =>
       (Array.isArray(prev) ? prev : []).map(c =>

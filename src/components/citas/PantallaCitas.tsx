@@ -1,21 +1,22 @@
 import { SincronizarCalCom } from './SincronizarCalCom';
 import { useState } from 'react';
+import type { Cita } from '../../types';
 import type { useLazaroStore } from '../../hooks/useLazaroStore';
 import { SERVICIOS } from '../../types';
 import { formatColones, formatFecha, formatHora, agruparCitasPorFecha } from '../../utils';
 import { NuevaCitaForm } from './NuevaCitaForm';
+import { EditarCitaForm } from './EditarCitaForm';
 
 type Store = ReturnType<typeof useLazaroStore>;
 type Vista = 'proximas' | 'historial';
 
 export function PantallaCitas({ store }: { store: Store }) {
   const [mostrarForm, setMostrarForm] = useState(false);
+  const [editandoCita, setEditandoCita] = useState<string | null>(null);
   const [vista, setVista] = useState<Vista>('proximas');
   const stats = store.getStats();
 
   const citasArr = Array.isArray(store.citas) ? store.citas : [];
-
-  // Fecha de hoy sin hora para comparación limpia
   const hoyStr = new Date().toISOString().split('T')[0];
 
   const proximas = citasArr
@@ -29,7 +30,17 @@ export function PantallaCitas({ store }: { store: Store }) {
   const citasAgrupadas = agruparCitasPorFecha(proximas);
   const fechas = Object.keys(citasAgrupadas).sort();
 
-  function CitaCard({ cita }: { cita: typeof citasArr[0] }) {
+  function CitaCard({ cita }: { cita: Cita }) {
+    if (editandoCita === cita.id) {
+      return (
+        <EditarCitaForm
+          cita={cita}
+          onGuardar={datos => { store.editarCita(cita.id, datos); setEditandoCita(null); }}
+          onCancelar={() => setEditandoCita(null)}
+        />
+      );
+    }
+
     return (
       <div className="cita-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -45,24 +56,35 @@ export function PantallaCitas({ store }: { store: Store }) {
             </span>
           </div>
         </div>
+
         <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 2 }}>
           {formatHora(cita.hora)} · {cita.clienteFechaNacimiento} · {cita.clienteTelefono}
         </p>
+
         {cita.intencion && (
           <p className="intencion">"{cita.intencion}"</p>
         )}
+
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
           <span style={{ fontFamily: 'Cinzel, serif', fontSize: 13, color: 'var(--gold)' }}>
             {formatColones(cita.precio)}
           </span>
-          {cita.estado === 'confirmada' && (
-            <button className="btn-ghost" onClick={() => store.completarCita(cita.id)}>
-              Marcar completada
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn-ghost" style={{ fontSize: 11 }}
+              onClick={() => setEditandoCita(cita.id)}>
+              Editar
             </button>
-          )}
-          {cita.estado === 'completada' && (
-            <span style={{ fontSize: 11, color: 'var(--teal)', letterSpacing: '0.04em' }}>Completada</span>
-          )}
+            {cita.estado === 'confirmada' && (
+              <button className="btn-ghost" onClick={() => store.completarCita(cita.id)}>
+                Marcar completada
+              </button>
+            )}
+            {cita.estado === 'completada' && (
+              <span style={{ fontSize: 11, color: 'var(--teal)', letterSpacing: '0.04em' }}>
+                Completada
+              </span>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -71,7 +93,7 @@ export function PantallaCitas({ store }: { store: Store }) {
   return (
     <div>
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: 10, marginBottom: '1.75rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: 10, marginBottom: '1.5rem' }}>
         {[
           { label: 'Esta semana', value: stats.citasSemana },
           { label: 'Este mes',    value: stats.citasMes },
@@ -87,45 +109,35 @@ export function PantallaCitas({ store }: { store: Store }) {
       {/* Sincronizar Cal.com */}
       <SincronizarCalCom store={store} />
 
-      {/* Sub-nav: Próximas / Historial */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: '1.25rem' }}>
+      {/* Sub-nav */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: '1.25rem', alignItems: 'center' }}>
         {([
           { id: 'proximas',  label: `Próximas (${proximas.length})` },
           { id: 'historial', label: `Historial (${historial.length})` },
         ] as { id: Vista; label: string }[]).map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setVista(tab.id)}
-            style={{
-              fontSize: 12, padding: '5px 14px', borderRadius: 20,
-              border: '1px solid',
-              borderColor: vista === tab.id ? 'var(--purple)' : 'var(--border-dim)',
-              background: vista === tab.id ? 'var(--purple-bg)' : 'transparent',
-              color: vista === tab.id ? 'var(--purple)' : 'var(--text-muted)',
-              cursor: 'pointer', transition: 'all .15s',
-              fontWeight: vista === tab.id ? 700 : 400,
-            }}
-          >
+          <button key={tab.id} onClick={() => setVista(tab.id)} style={{
+            fontSize: 12, padding: '5px 14px', borderRadius: 20, border: '1px solid',
+            borderColor: vista === tab.id ? 'var(--purple)' : 'var(--border-dim)',
+            background: vista === tab.id ? 'var(--purple-bg)' : 'transparent',
+            color: vista === tab.id ? 'var(--purple)' : 'var(--text-muted)',
+            cursor: 'pointer', fontWeight: vista === tab.id ? 700 : 400,
+          }}>
             {tab.label}
           </button>
         ))}
-        <button
-          className="btn-ghost"
-          style={{ marginLeft: 'auto', fontSize: 12 }}
-          onClick={() => setMostrarForm(v => !v)}
-        >
+        <button className="btn-ghost" style={{ marginLeft: 'auto', fontSize: 12 }}
+          onClick={() => setMostrarForm(v => !v)}>
           {mostrarForm ? 'Cancelar' : '+ Nueva cita'}
         </button>
       </div>
 
-      {/* Form nueva cita */}
       {mostrarForm && (
         <div style={{ marginBottom: '1.5rem' }}>
           <NuevaCitaForm onGuardar={datos => { store.agregarCita(datos); setMostrarForm(false); }} />
         </div>
       )}
 
-      {/* VISTA: PRÓXIMAS */}
+      {/* Próximas */}
       {vista === 'proximas' && (
         <>
           {fechas.length === 0 && (
@@ -142,7 +154,7 @@ export function PantallaCitas({ store }: { store: Store }) {
         </>
       )}
 
-      {/* VISTA: HISTORIAL */}
+      {/* Historial */}
       {vista === 'historial' && (
         <>
           {historial.length === 0 && (

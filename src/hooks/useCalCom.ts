@@ -88,12 +88,17 @@ export function useCalCom() {
         const fin       = new Date(b.endTime);
         const duracion  = (fin.getTime() - inicio.getTime()) / 60000;
 
+        // Identificadores exactos configurados en Cal.com
+        const telefono    = resp['attendeePhoneNumber']?.value ?? '';
+        const nacimiento  = resp['title']?.value ?? '';
+        const intencion   = resp['notes']?.value ?? '';
+
         return {
           calEventId:             String(b.id),
           clienteNombre:          attendee?.name ?? '',
-          clienteTelefono:        buscarRespuesta(resp, 'whatsapp', 'telefono', 'phone', 'tel'),
-          clienteFechaNacimiento: buscarRespuesta(resp, 'nacimiento', 'birth', 'cumple'),
-          intencion:              buscarRespuesta(resp, 'intencion', 'consultar', 'consulta', 'tema'),
+          clienteTelefono:        Array.isArray(telefono) ? telefono.join('') : String(telefono),
+          clienteFechaNacimiento: Array.isArray(nacimiento) ? nacimiento.join('') : String(nacimiento),
+          intencion:              Array.isArray(intencion) ? intencion.join('') : String(intencion),
           tipo:                   detectarTipo(duracion),
           modalidad:              detectarModalidad(resp),
           fecha:                  inicio.toISOString().split('T')[0],
