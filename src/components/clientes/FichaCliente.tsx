@@ -25,7 +25,7 @@ const TAG_CONFIG: { campo: TagCampo; label: string; cls: string }[] = [
   { campo: 'productosTrabajos',  label: 'Productos · velas · trabajos encargados', cls: 'tag-gold'   },
 ];
 
-export function FichaCliente({ cliente, citas, notas, onAgregarNota, onActualizarTags, onGuardarResena, onVolver }: Props) {
+export function FichaCliente({ cliente, citas, notas, onAgregarNota, onActualizarTags, onGuardarResena, onEditarCliente, onVolver }: Props) {
   const [nuevaNota, setNuevaNota] = useState('');
   const [citaSeleccionada, setCitaSeleccionada] = useState(citas[0]?.id ?? '');
   const [nuevoTag, setNuevoTag] = useState<Record<TagCampo, string>>({ intereses: '', nombresImportantes: '', productosTrabajos: '' });

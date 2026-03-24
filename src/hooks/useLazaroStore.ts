@@ -4,56 +4,43 @@ import { SERVICIOS } from '../types';
 
 const KEYS = {
   clientes: 'lazaro_clientes',
-  citas: 'lazaro_citas',
-  notas: 'lazaro_notas',
+  citas:    'lazaro_citas',
+  notas:    'lazaro_notas',
 };
 
 export function useLazaroStore() {
   const [clientes, setClientes] = useLocalStorage<Cliente[]>(KEYS.clientes, []);
-  const [citas, setCitas] = useLocalStorage<Cita[]>(KEYS.citas, []);
-  const [notas, setNotas] = useLocalStorage<NotaSesion[]>(KEYS.notas, []);
+  const [citas,    setCitas]    = useLocalStorage<Cita[]>(KEYS.citas, []);
+  const [notas,    setNotas]    = useLocalStorage<NotaSesion[]>(KEYS.notas, []);
+
+  const arr = <T>(v: T[] | unknown): T[] => Array.isArray(v) ? v as T[] : [];
 
   // ── CLIENTES ──────────────────────────────────────────────
+
+  function editarCliente(clienteId: string, datos: Partial<Cliente>) {
+    setClientes(prev => arr<Cliente>(prev).map(c =>
+      c.id === clienteId ? { ...c, ...datos } : c
+    ));
+  }
 
   function actualizarTagsCliente(
     clienteId: string,
     campo: 'intereses' | 'nombresImportantes' | 'productosTrabajos',
     tags: string[]
   ) {
-    setClientes(prev =>
-      (Array.isArray(prev) ? prev : []).map(c =>
-        c.id === clienteId ? { ...c, [campo]: tags } : c
-      )
-    );
-  }
-
-
-  function editarCita(citaId: string, datos: Partial<Cita>) {
-    setCitas(prev =>
-      (Array.isArray(prev) ? prev : []).map(c =>
-        c.id === citaId ? { ...c, ...datos } : c
-      )
-    );
-  }
-
-  function editarCliente(clienteId: string, datos: Partial<Cliente>) {
-    setClientes(prev =>
-      (Array.isArray(prev) ? prev : []).map(c =>
-        c.id === clienteId ? { ...c, ...datos } : c
-      )
-    );
+    setClientes(prev => arr<Cliente>(prev).map(c =>
+      c.id === clienteId ? { ...c, [campo]: tags } : c
+    ));
   }
 
   function guardarResena(clienteId: string, resena: string) {
-    setClientes(prev =>
-      (Array.isArray(prev) ? prev : []).map(c =>
-        c.id === clienteId ? { ...c, resena } : c
-      )
-    );
+    setClientes(prev => arr<Cliente>(prev).map(c =>
+      c.id === clienteId ? { ...c, resena } : c
+    ));
   }
 
   function getCliente(id: string): Cliente | undefined {
-    return (Array.isArray(clientes) ? clientes : []).find(c => c.id === id);
+    return arr<Cliente>(clientes).find(c => c.id === id);
   }
 
   // ── CITAS ─────────────────────────────────────────────────
@@ -74,18 +61,16 @@ export function useLazaroStore() {
     let clienteId = '';
 
     setClientes(prev => {
-      const arr = Array.isArray(prev) ? prev : [];
-      const existente = arr.find(c => c.telefono === datos.clienteTelefono);
-
+      const list = arr<Cliente>(prev);
+      const existente = list.find(c => c.telefono === datos.clienteTelefono);
       if (existente) {
         clienteId = existente.id;
-        return arr.map(c =>
+        return list.map(c =>
           c.id === existente.id
             ? { ...c, totalCitas: c.totalCitas + 1, totalIngresos: c.totalIngresos + precio }
             : c
         );
       }
-
       clienteId = generarId();
       const nuevo: Cliente = {
         id: clienteId,
@@ -100,7 +85,7 @@ export function useLazaroStore() {
         totalCitas: 1,
         totalIngresos: precio,
       };
-      return [...arr, nuevo];
+      return [...list, nuevo];
     });
 
     const nuevaCita: Cita = {
@@ -112,23 +97,26 @@ export function useLazaroStore() {
       notas: [],
       creadaEn: new Date().toISOString(),
     };
-
-    setCitas(prev => Array.isArray(prev) ? [...prev, nuevaCita] : [nuevaCita]);
+    setCitas(prev => [...arr<Cita>(prev), nuevaCita]);
     return citaId;
   }
 
+  function editarCita(citaId: string, datos: Partial<Cita>) {
+    setCitas(prev => arr<Cita>(prev).map(c =>
+      c.id === citaId ? { ...c, ...datos } : c
+    ));
+  }
+
   function completarCita(citaId: string) {
-    setCitas(prev =>
-      (Array.isArray(prev) ? prev : []).map(c =>
-        c.id === citaId ? { ...c, estado: 'completada' as const } : c
-      )
-    );
+    setCitas(prev => arr<Cita>(prev).map(c =>
+      c.id === citaId ? { ...c, estado: 'completada' as const } : c
+    ));
   }
 
   function getCitasDeCliente(clienteId: string): Cita[] {
-    return (Array.isArray(citas) ? citas : [])
+    return arr<Cita>(citas)
       .filter(c => c.clienteId === clienteId)
-      .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+      .sort((a, b) => b.fecha.localeCompare(a.fecha));
   }
 
   // ── NOTAS ─────────────────────────────────────────────────
@@ -143,61 +131,71 @@ export function useLazaroStore() {
       texto: texto.trim(),
       creadaEn: new Date().toISOString(),
     };
-    setNotas(prev => Array.isArray(prev) ? [...prev, nueva] : [nueva]);
+    setNotas(prev => [...arr<NotaSesion>(prev), nueva]);
   }
 
   function getNotasDeCliente(clienteId: string): NotaSesion[] {
-    return (Array.isArray(notas) ? notas : [])
+    return arr<NotaSesion>(notas)
       .filter(n => n.clienteId === clienteId)
-      .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+      .sort((a, b) => b.fecha.localeCompare(a.fecha));
   }
 
   function getNotasDeCita(citaId: string): NotaSesion[] {
-    return (Array.isArray(notas) ? notas : []).filter(n => n.citaId === citaId);
+    return arr<NotaSesion>(notas).filter(n => n.citaId === citaId);
   }
 
   // ── STATS ─────────────────────────────────────────────────
 
   function getStats() {
-    const citasArr = Array.isArray(citas) ? citas : [];
-    const clientesArr = Array.isArray(clientes) ? clientes : [];
-    const hoy = new Date();
-    const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    const citasArr    = arr<Cita>(citas);
+    const clientesArr = arr<Cliente>(clientes);
+    const hoy         = new Date();
+    const hoyStr      = hoy.toISOString().split('T')[0];
+    const inicioMes   = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().split('T')[0];
     const inicioSemana = new Date(hoy);
     inicioSemana.setDate(hoy.getDate() - hoy.getDay());
+    const semanaStr   = inicioSemana.toISOString().split('T')[0];
 
-    const citasMes = citasArr.filter(c => new Date(c.fecha) >= inicioMes);
-    const citasSemana = citasArr.filter(c => new Date(c.fecha) >= inicioSemana);
-    const ingresosMes = citasMes.reduce((sum, c) => sum + c.precio, 0);
+    const citasMes    = citasArr.filter(c => c.fecha >= inicioMes);
+    const citasSemana = citasArr.filter(c => c.fecha >= semanaStr);
+    const ingresosMes = citasMes.reduce((s, c) => s + c.precio, 0);
     const clientesRepiten = clientesArr.filter(c => c.totalCitas > 1).length;
 
     const proximasCitas = citasArr
-      .filter(c => c.estado === 'confirmada' && new Date(c.fecha) >= new Date(hoy.toDateString()))
-      .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+      .filter(c => c.estado === 'confirmada' && c.fecha >= hoyStr)
+      .sort((a, b) => a.fecha.localeCompare(b.fecha) || a.hora.localeCompare(b.hora));
 
     return {
       totalClientes: clientesArr.length,
       clientesRepiten,
-      citasSemana: citasSemana.length,
-      citasMes: citasMes.length,
+      citasSemana:   citasSemana.length,
+      citasMes:      citasMes.length,
       ingresosMes,
       proximasCitas,
     };
   }
 
   return {
-    clientes: Array.isArray(clientes) ? clientes : [],
-    citas: Array.isArray(citas) ? citas : [],
-    notas: Array.isArray(notas) ? notas : [],
+    clientes: arr<Cliente>(clientes),
+    citas:    arr<Cita>(citas),
+    notas:    arr<NotaSesion>(notas),
+    // clientes
+    editarCliente,
     actualizarTagsCliente,
     guardarResena,
     getCliente,
+    // citas
     agregarCita,
+    editarCita,
     completarCita,
     getCitasDeCliente,
+    // notas
     agregarNota,
     getNotasDeCliente,
     getNotasDeCita,
+    // stats
     getStats,
+    editarCita,
+    editarCliente,
   };
 }
