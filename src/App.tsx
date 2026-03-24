@@ -11,53 +11,32 @@ export default function App() {
   const store = useLazaroStore();
 
   return (
-    <div style={{
-      maxWidth: '680px',
-      margin: '0 auto',
-      padding: '1.5rem 1rem',
-      minHeight: '100vh',
-      background: 'var(--color-background-tertiary)',
-    }}>
+    <div style={{ maxWidth: 720, margin: '0 auto', padding: '2rem 1.25rem', minHeight: '100vh' }}>
+
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }} className="fade-up">
         <div>
-          <h1 style={{ fontSize: '18px', fontWeight: 500, margin: 0, color: 'var(--color-text-primary)' }}>
-            Lázaro — Lecturas de Tarot
+          <h1 className="font-display" style={{ fontSize: 22, color: 'var(--gold)', fontWeight: 500, letterSpacing: '0.08em', marginBottom: 4 }}>
+            Lázaro
           </h1>
-          <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', margin: 0 }}>
-            Panel de administración
+          <p className="font-serif" style={{ fontSize: 14, color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+            Lecturas de Tarot — Panel de administración
           </p>
         </div>
-        <div style={{
-          width: 40, height: 40, borderRadius: '50%',
-          background: '#FAECE7', display: 'flex',
-          alignItems: 'center', justifyContent: 'center',
-          fontSize: '14px', fontWeight: 500, color: '#712B13',
-        }}>
-          GL
-        </div>
+        <div className="avatar" style={{ width: 42, height: 42, fontSize: 13 }}>GL</div>
       </div>
 
       {/* Nav */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: '1.75rem' }} className="fade-up">
         {([
-          { id: 'citas', label: 'Próximas citas' },
+          { id: 'citas',    label: 'Próximas citas' },
           { id: 'clientes', label: 'Clientes' },
-          { id: 'config', label: 'Mi link' },
+          { id: 'config',   label: 'Mi link' },
         ] as { id: Pantalla; label: string }[]).map(tab => (
           <button
             key={tab.id}
             onClick={() => setPantalla(tab.id)}
-            style={{
-              fontSize: '13px', padding: '6px 16px', borderRadius: '20px',
-              border: '0.5px solid',
-              borderColor: pantalla === tab.id ? '#993C1D' : 'var(--color-border-secondary)',
-              background: pantalla === tab.id ? '#FAECE7' : 'transparent',
-              color: pantalla === tab.id ? '#712B13' : 'var(--color-text-secondary)',
-              fontWeight: pantalla === tab.id ? 500 : 400,
-              cursor: 'pointer',
-              transition: 'all .15s',
-            }}
+            className={`nav-tab${pantalla === tab.id ? ' active' : ''}`}
           >
             {tab.label}
           </button>
@@ -65,21 +44,16 @@ export default function App() {
       </div>
 
       {/* Content */}
-      <div style={{
-        background: 'var(--color-background-primary)',
-        border: '0.5px solid var(--color-border-tertiary)',
-        borderRadius: '12px',
-        padding: '1.25rem',
-      }}>
-        {pantalla === 'citas' && <PantallaCitas store={store} />}
-        {pantalla === 'clientes' && (
-          <PantallaClientes
-            store={store}
-            onVerCita={() => setPantalla('citas')}
-          />
-        )}
-        {pantalla === 'config' && <PantallaConfig />}
+      <div className="card fade-up">
+        {pantalla === 'citas'    && <PantallaCitas store={store} />}
+        {pantalla === 'clientes' && <PantallaClientes store={store} onVerCita={() => setPantalla('citas')} />}
+        {pantalla === 'config'   && <PantallaConfig />}
       </div>
+
+      {/* Footer */}
+      <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.06em', fontFamily: 'Lato, sans-serif' }}>
+        LÁZARO · LECTURAS DE TAROT
+      </p>
     </div>
   );
 }

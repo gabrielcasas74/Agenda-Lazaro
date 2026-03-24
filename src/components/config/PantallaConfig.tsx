@@ -5,107 +5,58 @@ export function PantallaConfig() {
   const [copiado, setCopiado] = useState(false);
   const calUrl = `cal.com/${CAL_USERNAME}`;
 
-  function copiarLink() {
+  function copiar() {
     navigator.clipboard.writeText(`https://${calUrl}`).then(() => {
-      setCopiado(true);
-      setTimeout(() => setCopiado(false), 2000);
+      setCopiado(true); setTimeout(() => setCopiado(false), 2000);
     });
   }
 
+  const lbl = { fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: 'var(--text-muted)', marginBottom: 8, display: 'block' };
+
   return (
     <div>
-      <p style={{ fontSize: '14px', color: 'var(--color-text-secondary)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+      <p className="font-serif" style={{ fontSize: 15, color: 'var(--text-secondary)', marginBottom: '1.5rem', fontStyle: 'italic', lineHeight: 1.7 }}>
         Este es el link que enviás a tus clientes. Ellos eligen el tipo de lectura, la fecha disponible y llenan el formulario solos.
       </p>
 
-      {/* Link box */}
-      <p style={{ fontSize: '11px', fontWeight: 500, color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '.05em', margin: '0 0 8px' }}>
-        Tu link de agendamiento
-      </p>
-      <div style={{
-        background: 'var(--color-background-secondary)', borderRadius: '8px',
-        padding: '12px 16px', display: 'flex', justifyContent: 'space-between',
-        alignItems: 'center', marginBottom: '1.5rem',
-      }}>
-        <span style={{ fontSize: '13px', color: 'var(--color-text-secondary)', fontFamily: 'var(--font-mono)' }}>
-          {calUrl}
-        </span>
-        <button
-          onClick={copiarLink}
-          style={{
-            fontSize: '12px', padding: '4px 12px', borderRadius: '6px',
-            border: '0.5px solid var(--color-border-secondary)',
-            background: copiado ? '#E1F5EE' : 'transparent',
-            color: copiado ? '#085041' : 'var(--color-text-secondary)',
-            cursor: 'pointer',
-          }}
-        >
+      <span style={lbl}>Tu link de agendamiento</span>
+      <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-dim)', borderRadius: 8, padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <span style={{ fontFamily: 'monospace', fontSize: 13, color: 'var(--gold)' }}>{calUrl}</span>
+        <button className="btn-ghost" onClick={copiar} style={{ color: copiado ? 'var(--teal)' : undefined }}>
           {copiado ? 'Copiado' : 'Copiar'}
         </button>
       </div>
 
-      <hr style={{ border: 'none', borderTop: '0.5px solid var(--color-border-tertiary)', margin: '1.25rem 0' }} />
+      <div className="divider" />
 
-      {/* Servicios */}
-      <p style={{ fontSize: '11px', fontWeight: 500, color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '.05em', margin: '0 0 12px' }}>
-        Servicios configurados
-      </p>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '1.5rem' }}>
+      <span style={lbl}>Servicios configurados</span>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: '1.5rem' }}>
         {(Object.entries(SERVICIOS) as [string, typeof SERVICIOS[keyof typeof SERVICIOS]][]).map(([key, s]) => (
-          <div key={key} style={{
-            background: 'var(--color-background-primary)',
-            border: '0.5px solid var(--color-border-tertiary)',
-            borderRadius: '12px', padding: '12px 16px',
-          }}>
-            <span style={{
-              fontSize: '11px', padding: '3px 10px', borderRadius: '12px', fontWeight: 500,
-              display: 'inline-block', marginBottom: '8px',
-              background: key === 'breve' ? '#EEEDFE' : '#FAEEDA',
-              color: key === 'breve' ? '#3C3489' : '#633806',
-            }}>
+          <div key={key} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-dim)', borderRadius: 10, padding: '14px 16px' }}>
+            <span className={`badge badge-${key}`} style={{ marginBottom: 10, display: 'inline-block' }}>
               {key === 'breve' ? 'Breve' : 'Completa'}
             </span>
-            <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--color-text-primary)', margin: '0 0 4px' }}>
-              {s.duracion} minutos
-            </p>
-            <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', margin: '0 0 4px' }}>
-              ₡{s.precio.toLocaleString('es-CR')}
-            </p>
-            <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', margin: 0 }}>
-              Presencial sáb · Virtual 6–9 pm
-            </p>
+            <p className="font-display" style={{ fontSize: 15, color: 'var(--text-primary)', marginBottom: 4 }}>{s.duracion} minutos</p>
+            <p className="font-display" style={{ fontSize: 14, color: 'var(--gold)', marginBottom: 4 }}>₡{s.precio.toLocaleString('es-CR')}</p>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Presencial sáb · Virtual 6–9 pm</p>
           </div>
         ))}
       </div>
 
-      <hr style={{ border: 'none', borderTop: '0.5px solid var(--color-border-tertiary)', margin: '1.25rem 0' }} />
+      <div className="divider" />
 
-      {/* Disponibilidad */}
-      <p style={{ fontSize: '11px', fontWeight: 500, color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '.05em', margin: '0 0 12px' }}>
-        Disponibilidad configurada
-      </p>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '1.5rem' }}>
+      <span style={lbl}>Disponibilidad</span>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
         {[
           { label: 'Presencial', dia: 'Sábados', detalle: 'Todo el día · sin límite' },
-          { label: 'Virtual', dia: 'Lun – Vie', detalle: '6:00 pm – 9:00 pm' },
-        ].map(item => (
-          <div key={item.label} style={{ background: 'var(--color-background-secondary)', borderRadius: '8px', padding: '12px 14px' }}>
-            <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', margin: '0 0 4px' }}>{item.label}</p>
-            <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--color-text-primary)', margin: '0 0 2px' }}>{item.dia}</p>
-            <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', margin: 0 }}>{item.detalle}</p>
+          { label: 'Virtual',    dia: 'Lun – Vie', detalle: '6:00 pm – 9:00 pm' },
+        ].map(d => (
+          <div key={d.label} className="stat-card">
+            <p className="stat-label">{d.label}</p>
+            <p className="font-display" style={{ fontSize: 15, color: 'var(--text-primary)', marginBottom: 2 }}>{d.dia}</p>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{d.detalle}</p>
           </div>
         ))}
-      </div>
-
-      {/* Nota sobre username */}
-      <div style={{
-        background: '#FAEEDA', border: '0.5px solid #EF9F27',
-        borderRadius: '8px', padding: '12px 14px',
-      }}>
-        <p style={{ fontSize: '13px', color: '#633806', margin: 0, lineHeight: 1.6 }}>
-          Cuando tengas tu username de Cal.com, cambiá el valor de <code style={{ fontFamily: 'var(--font-mono)', fontSize: '12px' }}>CAL_USERNAME</code> en{' '}
-          <code style={{ fontFamily: 'var(--font-mono)', fontSize: '12px' }}>src/types/index.ts</code>.
-        </p>
       </div>
     </div>
   );

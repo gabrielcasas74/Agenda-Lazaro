@@ -9,120 +9,74 @@ type Store = ReturnType<typeof useLazaroStore>;
 export function PantallaCitas({ store }: { store: Store }) {
   const [mostrarForm, setMostrarForm] = useState(false);
   const stats = store.getStats();
-
   const citasAgrupadas = agruparCitasPorFecha(stats.proximasCitas);
   const fechas = Object.keys(citasAgrupadas).sort();
 
   return (
     <div>
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0,1fr))', gap: '10px', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: 10, marginBottom: '1.75rem' }}>
         {[
           { label: 'Esta semana', value: stats.citasSemana },
-          { label: 'Este mes', value: stats.citasMes },
-          { label: 'Ingresos mes', value: formatColones(stats.ingresosMes) },
+          { label: 'Este mes',    value: stats.citasMes },
+          { label: 'Ingresos',   value: formatColones(stats.ingresosMes) },
         ].map(s => (
-          <div key={s.label} style={{ background: 'var(--color-background-secondary)', borderRadius: '8px', padding: '12px 14px' }}>
-            <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', margin: '0 0 4px' }}>{s.label}</p>
-            <p style={{ fontSize: '22px', fontWeight: 500, color: 'var(--color-text-primary)', margin: 0 }}>{s.value}</p>
+          <div key={s.label} className="stat-card">
+            <p className="stat-label">{s.label}</p>
+            <p className="stat-value">{s.value}</p>
           </div>
         ))}
       </div>
 
-      {/* Botón nueva cita manual */}
-      <button
-        onClick={() => setMostrarForm(!mostrarForm)}
-        style={{
-          width: '100%', padding: '9px', marginBottom: '1.25rem',
-          borderRadius: '8px', border: '0.5px solid #993C1D',
-          background: mostrarForm ? '#F0997B' : '#FAECE7',
-          color: '#712B13', fontSize: '13px', fontWeight: 500, cursor: 'pointer',
-        }}
-      >
+      {/* Botón nueva cita */}
+      <button className="btn-primary" style={{ marginBottom: '1.5rem' }} onClick={() => setMostrarForm(v => !v)}>
         {mostrarForm ? 'Cancelar' : '+ Registrar cita manualmente'}
       </button>
 
       {mostrarForm && (
         <div style={{ marginBottom: '1.5rem' }}>
-          <NuevaCitaForm
-            onGuardar={(datos) => {
-              store.agregarCita(datos);
-              setMostrarForm(false);
-            }}
-          />
+          <NuevaCitaForm onGuardar={datos => { store.agregarCita(datos); setMostrarForm(false); }} />
         </div>
       )}
 
-      {/* Lista de próximas citas */}
+      {/* Lista */}
       {fechas.length === 0 && (
-        <p style={{ fontSize: '14px', color: 'var(--color-text-secondary)', textAlign: 'center', padding: '2rem 0' }}>
+        <p className="font-serif" style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2.5rem 0', fontStyle: 'italic', fontSize: 16 }}>
           No hay citas próximas registradas.
         </p>
       )}
 
       {fechas.map(fecha => (
-        <div key={fecha}>
-          <p style={{
-            fontSize: '11px', fontWeight: 500, color: 'var(--color-text-secondary)',
-            textTransform: 'uppercase', letterSpacing: '.05em', margin: '0 0 10px',
-          }}>
+        <div key={fecha} style={{ marginBottom: '1.25rem' }}>
+          <p className="section-label" style={{ marginBottom: 10 }}>
             {formatFecha(fecha + 'T12:00:00')}
           </p>
-
           {citasAgrupadas[fecha].map(cita => (
-            <div
-              key={cita.id}
-              style={{
-                background: 'var(--color-background-primary)',
-                border: '0.5px solid var(--color-border-tertiary)',
-                borderRadius: '10px', padding: '12px 14px', marginBottom: '10px',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--color-text-primary)' }}>
+            <div key={cita.id} className="cita-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <span style={{ fontFamily: 'Cinzel, serif', fontSize: 14, color: 'var(--text-primary)', letterSpacing: '0.03em' }}>
                   {cita.clienteNombre}
                 </span>
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  <span style={{
-                    fontSize: '11px', padding: '3px 10px', borderRadius: '12px', fontWeight: 500,
-                    background: cita.modalidad === 'presencial' ? '#FAECE7' : '#E1F5EE',
-                    color: cita.modalidad === 'presencial' ? '#712B13' : '#085041',
-                  }}>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <span className={`badge badge-${cita.modalidad}`}>
                     {cita.modalidad === 'presencial' ? 'Presencial' : 'Virtual'}
                   </span>
-                  <span style={{
-                    fontSize: '11px', padding: '3px 10px', borderRadius: '12px', fontWeight: 500,
-                    background: cita.tipo === 'breve' ? '#EEEDFE' : '#FAEEDA',
-                    color: cita.tipo === 'breve' ? '#3C3489' : '#633806',
-                  }}>
+                  <span className={`badge badge-${cita.tipo}`}>
                     {SERVICIOS[cita.tipo].nombre} · {SERVICIOS[cita.tipo].duracion} min
                   </span>
                 </div>
               </div>
-              <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', margin: '0 0 4px' }}>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 2 }}>
                 {formatHora(cita.hora)} · {cita.clienteFechaNacimiento} · {cita.clienteTelefono}
               </p>
               {cita.intencion && (
-                <p style={{
-                  fontSize: '12px', color: 'var(--color-text-secondary)', margin: '6px 0 0',
-                  fontStyle: 'italic', borderLeft: '2px solid var(--color-border-secondary)',
-                  paddingLeft: '8px', lineHeight: 1.5,
-                }}>
-                  "{cita.intencion}"
-                </p>
+                <p className="intencion">"{cita.intencion}"</p>
               )}
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', alignItems: 'center' }}>
-                <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--color-text-primary)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+                <span style={{ fontFamily: 'Cinzel, serif', fontSize: 13, color: 'var(--gold)' }}>
                   {formatColones(cita.precio)}
                 </span>
-                <button
-                  onClick={() => store.completarCita(cita.id)}
-                  style={{
-                    fontSize: '12px', padding: '4px 12px', borderRadius: '6px',
-                    border: '0.5px solid var(--color-border-secondary)',
-                    background: 'transparent', color: 'var(--color-text-secondary)', cursor: 'pointer',
-                  }}
-                >
+                <button className="btn-ghost" onClick={() => store.completarCita(cita.id)}>
                   Marcar completada
                 </button>
               </div>
