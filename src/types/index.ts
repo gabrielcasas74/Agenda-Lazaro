@@ -11,6 +11,7 @@ export interface Cliente {
   intereses: string[];
   nombresImportantes: string[];
   productosTrabajos: string[];
+  resena?: string;
   creadoEn: string;
   totalCitas: number;
   totalIngresos: number;
@@ -40,17 +41,9 @@ export interface Cita {
   precio: number;
   notas: NotaSesion[];
   creadaEn: string;
-  // datos que vienen de Cal.com
   calEventId?: string;
 }
 
-export interface AppState {
-  clientes: Cliente[];
-  citas: Cita[];
-  notas: NotaSesion[];
-}
-
-// Catálogo de servicios
 export const SERVICIOS = {
   breve: {
     nombre: 'Lectura breve',

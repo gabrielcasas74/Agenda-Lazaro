@@ -151,7 +151,16 @@ export function useLazaroStore() {
       .filter(c => c.estado === 'confirmada' && new Date(c.fecha) >= new Date(hoy.toDateString()))
       .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
 
-    return {
+  
+  function guardarResena(clienteId: string, resena: string) {
+    setClientes(prev =>
+      (Array.isArray(prev) ? prev : []).map(c =>
+        c.id === clienteId ? { ...c, resena } : c
+      )
+    );
+  }
+
+  return {
       totalClientes: clientesArr.length,
       clientesRepiten,
       citasSemana: citasSemana.length,
@@ -174,5 +183,8 @@ export function useLazaroStore() {
     getNotasDeCliente,
     getNotasDeCita,
     getStats,
+    guardarResena,
   };
 }
+
+// Exportar guardarResena — se agrega al return del hook

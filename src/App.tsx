@@ -16,7 +16,7 @@ export default function App() {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }} className="fade-up">
         <div>
-          <h1 className="font-display" style={{ fontSize: 22, color: 'var(--gold)', fontWeight: 500, letterSpacing: '0.08em', marginBottom: 4 }}>
+          <h1 className="font-display" style={{ fontSize: 22, color: 'var(--purple)', fontWeight: 500, letterSpacing: '0.08em', marginBottom: 4 }}>
             Lázaro
           </h1>
           <p className="font-serif" style={{ fontSize: 14, color: 'var(--text-secondary)', fontStyle: 'italic' }}>

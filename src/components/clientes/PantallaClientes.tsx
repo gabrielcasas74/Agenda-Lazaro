@@ -19,6 +19,7 @@ export function PantallaClientes({ store, onVerCita }: { store: Store; onVerCita
         notas={store.getNotasDeCliente(cliente.id)}
         onAgregarNota={(citaId, texto) => store.agregarNota(citaId, cliente.id, texto)}
         onActualizarTags={(campo, tags) => store.actualizarTagsCliente(cliente.id, campo, tags)}
+        onGuardarResena={(resena) => store.guardarResena(cliente.id, resena)}
         onVolver={() => setSeleccionado(null)}
       />
     );
