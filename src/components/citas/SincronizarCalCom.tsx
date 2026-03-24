@@ -13,12 +13,15 @@ export function SincronizarCalCom({ store }: { store: Store }) {
     const citas = await sincronizar();
     if (!citas.length) return;
 
-    const citasExistentes = store.citas.map(c => c.calEventId).filter(Boolean);
+    const idsExistentes = store.citas
+      .map(c => c.calEventId)
+      .filter(Boolean);
+
     let nuevas = 0;
     let duplicadas = 0;
 
     for (const cita of citas) {
-      if (citasExistentes.includes(cita.calEventId)) {
+      if (idsExistentes.includes(cita.calEventId)) {
         duplicadas++;
         continue;
       }
@@ -36,14 +39,17 @@ export function SincronizarCalCom({ store }: { store: Store }) {
       borderRadius: 10,
       padding: '14px 16px',
       marginBottom: '1.25rem',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 8,
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 2 }}>
-            Sincronizar con Cal.com
+            Cal.com
           </p>
           <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-            Importa citas nuevas del link de agendamiento
+            Importar citas nuevas del link de agendamiento
           </p>
         </div>
         <button
@@ -57,13 +63,13 @@ export function SincronizarCalCom({ store }: { store: Store }) {
       </div>
 
       {error && (
-        <p style={{ fontSize: 12, color: 'var(--danger)', marginTop: 8 }}>{error}</p>
+        <p style={{ fontSize: 12, color: 'var(--danger)' }}>{error}</p>
       )}
 
       {resultado && (
-        <p style={{ fontSize: 12, color: 'var(--teal)', marginTop: 8 }}>
+        <p style={{ fontSize: 12, color: 'var(--teal)' }}>
           {resultado.nuevas > 0
-            ? `${resultado.nuevas} cita${resultado.nuevas > 1 ? 's' : ''} importada${resultado.nuevas > 1 ? 's' : ''} correctamente.`
+            ? `${resultado.nuevas} cita${resultado.nuevas !== 1 ? 's' : ''} importada${resultado.nuevas !== 1 ? 's' : ''}.`
             : 'Sin citas nuevas.'
           }
           {resultado.duplicadas > 0 && ` (${resultado.duplicadas} ya existían)`}
