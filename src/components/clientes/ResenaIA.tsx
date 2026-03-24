@@ -45,12 +45,16 @@ Reseña esotérica:`;
         body: JSON.stringify({ prompt }),
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? 'Error del servidor');
-      if (!data.texto) throw new Error('Sin respuesta');
+      let data: any = {};
+      try { data = await response.json(); } catch { data = {}; }
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${data.error ?? response.statusText}`);
+      }
+      if (!data.texto) throw new Error('Respuesta vacía del servidor');
       onGuardar(data.texto.trim());
     } catch (e: any) {
-      setError(e.message ?? 'No se pudo generar la reseña.');
+      setError(e.message ?? 'Error desconocido');
     } finally {
       setGenerando(false);
     }
