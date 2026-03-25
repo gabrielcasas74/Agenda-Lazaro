@@ -7,7 +7,7 @@ export default async function handler(req: Request): Promise<Response> {
 
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'GROQ_API_KEY no configurada en Vercel' }), { status: 500 });
+    return new Response(JSON.stringify({ error: 'v2: GROQ_API_KEY no configurada - verificar Vercel env vars' }), { status: 500 });
   }
 
   let prompt = '';

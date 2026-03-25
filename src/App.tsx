@@ -4,8 +4,9 @@ import { PantallaCitas } from './components/citas/PantallaCitas';
 import { PantallaClientes } from './components/clientes/PantallaClientes';
 import { PantallaConfig } from './components/config/PantallaConfig';
 import { PantallaFinanzas } from './components/finanzas/PantallaFinanzas';
+import { PantallaContabilidad } from './components/contabilidad/PantallaContabilidad';
 
-type Pantalla = 'citas' | 'clientes' | 'finanzas' | 'config';
+type Pantalla = 'citas' | 'clientes' | 'finanzas' | 'contabilidad' | 'config';
 
 export default function App() {
   const [pantalla, setPantalla] = useState<Pantalla>('citas');
@@ -32,7 +33,8 @@ export default function App() {
         {([
           { id: 'citas',    label: 'Próximas citas' },
           { id: 'clientes', label: 'Clientes' },
-          { id: 'finanzas', label: 'Finanzas' },
+          { id: 'finanzas',      label: 'Finanzas' },
+          { id: 'contabilidad', label: 'Contabilidad' },
           { id: 'config',   label: 'Mi link' },
         ] as { id: Pantalla; label: string }[]).map(tab => (
           <button
@@ -49,7 +51,8 @@ export default function App() {
       <div className="card fade-up">
         {pantalla === 'citas'    && <PantallaCitas store={store} />}
         {pantalla === 'clientes' && <PantallaClientes store={store} onVerCita={() => setPantalla('citas')} />}
-        {pantalla === 'finanzas' && <PantallaFinanzas store={store} />}
+        {pantalla === 'finanzas'      && <PantallaFinanzas store={store} />}
+        {pantalla === 'contabilidad' && <PantallaContabilidad />}
         {pantalla === 'config'   && <PantallaConfig />}
       </div>
 
