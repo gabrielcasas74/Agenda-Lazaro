@@ -1,214 +1,251 @@
-import { useLocalStorage, generarId } from './useLocalStorage';
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import { generarId } from './useLocalStorage';
 import type { Cliente, Cita, NotaSesion, TipoLectura, Modalidad } from '../types';
 import { SERVICIOS } from '../types';
 
-const KEYS = {
-  clientes: 'lazaro_clientes',
-  citas:    'lazaro_citas',
-  notas:    'lazaro_notas',
-};
+function arr<T>(v: unknown): T[] {
+  return Array.isArray(v) ? (v as T[]) : [];
+}
+
+// Convertir snake_case de Supabase a camelCase
+function toCliente(r: any): Cliente {
+  return {
+    id: r.id, nombre: r.nombre, telefono: r.telefono,
+    fechaNacimiento: r.fecha_nacimiento,
+    modalidadUsual: r.modalidad_usual,
+    intereses: r.intereses ?? [],
+    nombresImportantes: r.nombres_importantes ?? [],
+    productosTrabajos: r.productos_trabajos ?? [],
+    resena: r.resena,
+    creadoEn: r.creado_en,
+    totalCitas: r.total_citas,
+    totalIngresos: r.total_ingresos,
+  };
+}
+
+function toCita(r: any): Cita {
+  return {
+    id: r.id, clienteId: r.cliente_id,
+    clienteNombre: r.cliente_nombre,
+    clienteTelefono: r.cliente_telefono,
+    clienteFechaNacimiento: r.cliente_fecha_nacimiento,
+    tipo: r.tipo, modalidad: r.modalidad,
+    fecha: r.fecha, hora: r.hora,
+    intencion: r.intencion, estado: r.estado,
+    precio: r.precio, notas: [],
+    creadoEn: r.creado_en,
+    calEventId: r.cal_event_id,
+  };
+}
+
+function toNota(r: any): NotaSesion {
+  return {
+    id: r.id, citaId: r.cita_id, clienteId: r.cliente_id,
+    fecha: r.fecha, texto: r.texto, creadaEn: r.creado_en,
+  };
+}
 
 export function useLazaroStore() {
-  const [clientes, setClientes] = useLocalStorage<Cliente[]>(KEYS.clientes, []);
-  const [citas,    setCitas]    = useLocalStorage<Cita[]>(KEYS.citas, []);
-  const [notas,    setNotas]    = useLocalStorage<NotaSesion[]>(KEYS.notas, []);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [citas, setCitas]       = useState<Cita[]>([]);
+  const [notas, setNotas]       = useState<NotaSesion[]>([]);
+  const [cargando, setCargando] = useState(true);
 
-  const arr = <T>(v: T[] | unknown): T[] => Array.isArray(v) ? v as T[] : [];
+  // Carga inicial
+  useEffect(() => {
+    async function cargar() {
+      setCargando(true);
+      const [{ data: c }, { data: ci }, { data: n }] = await Promise.all([
+        supabase.from('clientes').select('*').order('creado_en'),
+        supabase.from('citas').select('*').order('fecha'),
+        supabase.from('notas').select('*').order('fecha'),
+      ]);
+      setClientes((c ?? []).map(toCliente));
+      setCitas((ci ?? []).map(toCita));
+      setNotas((n ?? []).map(toNota));
+      setCargando(false);
+    }
+    cargar();
+  }, []);
 
   // ── CLIENTES ──────────────────────────────────────────────
 
-  function editarCliente(clienteId: string, datos: Partial<Cliente>) {
-    setClientes(prev => arr<Cliente>(prev).map(c =>
-      c.id === clienteId ? { ...c, ...datos } : c
-    ));
+  function getCliente(id: string): Cliente | undefined {
+    return clientes.find(c => c.id === id);
   }
 
-  function actualizarTagsCliente(
+  async function actualizarTagsCliente(
     clienteId: string,
     campo: 'intereses' | 'nombresImportantes' | 'productosTrabajos',
     tags: string[]
   ) {
-    setClientes(prev => arr<Cliente>(prev).map(c =>
-      c.id === clienteId ? { ...c, [campo]: tags } : c
-    ));
+    const col = campo === 'intereses' ? 'intereses'
+      : campo === 'nombresImportantes' ? 'nombres_importantes'
+      : 'productos_trabajos';
+    await supabase.from('clientes').update({ [col]: tags }).eq('id', clienteId);
+    setClientes(prev => prev.map(c => c.id === clienteId ? { ...c, [campo]: tags } : c));
   }
 
-  function guardarResena(clienteId: string, resena: string) {
-    setClientes(prev => arr<Cliente>(prev).map(c =>
-      c.id === clienteId ? { ...c, resena } : c
-    ));
+  async function guardarResena(clienteId: string, resena: string) {
+    await supabase.from('clientes').update({ resena }).eq('id', clienteId);
+    setClientes(prev => prev.map(c => c.id === clienteId ? { ...c, resena } : c));
   }
 
-  function getCliente(id: string): Cliente | undefined {
-    return arr<Cliente>(clientes).find(c => c.id === id);
+  async function editarCliente(clienteId: string, datos: Partial<Cliente>) {
+    const update: any = {};
+    if (datos.nombre)          update.nombre           = datos.nombre;
+    if (datos.telefono)        update.telefono         = datos.telefono;
+    if (datos.fechaNacimiento) update.fecha_nacimiento = datos.fechaNacimiento;
+    if (datos.modalidadUsual)  update.modalidad_usual  = datos.modalidadUsual;
+    if (datos.notas !== undefined) update.notas        = datos.notas;
+    await supabase.from('clientes').update(update).eq('id', clienteId);
+    setClientes(prev => prev.map(c => c.id === clienteId ? { ...c, ...datos } : c));
   }
 
   // ── CITAS ─────────────────────────────────────────────────
 
-  function agregarCita(datos: {
-    clienteNombre: string;
-    clienteTelefono: string;
-    clienteFechaNacimiento: string;
-    tipo: TipoLectura;
-    modalidad: Modalidad;
-    fecha: string;
-    hora: string;
-    intencion: string;
-    calEventId?: string;
-  }): string {
+  async function agregarCita(datos: {
+    clienteNombre: string; clienteTelefono: string; clienteFechaNacimiento: string;
+    tipo: TipoLectura; modalidad: Modalidad; fecha: string; hora: string;
+    intencion: string; calEventId?: string;
+  }): Promise<string> {
     const precio = SERVICIOS[datos.tipo].precio;
     const citaId = generarId();
-    let clienteId = '';
 
-    setClientes(prev => {
-      const list = arr<Cliente>(prev);
-      const existente = list.find(c => c.telefono === datos.clienteTelefono);
-      if (existente) {
-        clienteId = existente.id;
-        return list.map(c =>
-          c.id === existente.id
-            ? { ...c, totalCitas: c.totalCitas + 1, totalIngresos: c.totalIngresos + precio }
-            : c
-        );
-      }
+    // Upsert cliente
+    let clienteId = '';
+    const existente = clientes.find(c => c.telefono === datos.clienteTelefono);
+
+    if (existente) {
+      clienteId = existente.id;
+      await supabase.from('clientes').update({
+        total_citas:    existente.totalCitas + 1,
+        total_ingresos: existente.totalIngresos + precio,
+      }).eq('id', clienteId);
+      setClientes(prev => prev.map(c => c.id === clienteId
+        ? { ...c, totalCitas: c.totalCitas + 1, totalIngresos: c.totalIngresos + precio }
+        : c
+      ));
+    } else {
       clienteId = generarId();
-      const nuevo: Cliente = {
+      const nuevoCliente = {
         id: clienteId,
         nombre: datos.clienteNombre,
         telefono: datos.clienteTelefono,
-        fechaNacimiento: datos.clienteFechaNacimiento,
-        modalidadUsual: datos.modalidad,
-        intereses: [],
-        nombresImportantes: [],
-        productosTrabajos: [],
-        creadoEn: new Date().toISOString(),
-        totalCitas: 1,
-        totalIngresos: precio,
+        fecha_nacimiento: datos.clienteFechaNacimiento,
+        modalidad_usual: datos.modalidad,
+        intereses: [], nombres_importantes: [], productos_trabajos: [],
+        total_citas: 1, total_ingresos: precio,
       };
-      return [...list, nuevo];
-    });
+      await supabase.from('clientes').insert(nuevoCliente);
+      setClientes(prev => [...prev, toCliente({ ...nuevoCliente, creado_en: new Date().toISOString() })]);
+    }
 
-    const nuevaCita: Cita = {
-      id: citaId,
-      clienteId,
-      ...datos,
-      estado: 'confirmada',
-      precio,
-      notas: [],
-      creadaEn: new Date().toISOString(),
+    const nuevaCita = {
+      id: citaId, cliente_id: clienteId,
+      cliente_nombre: datos.clienteNombre,
+      cliente_telefono: datos.clienteTelefono,
+      cliente_fecha_nacimiento: datos.clienteFechaNacimiento,
+      tipo: datos.tipo, modalidad: datos.modalidad,
+      fecha: datos.fecha, hora: datos.hora,
+      intencion: datos.intencion, estado: 'confirmada',
+      precio, cal_event_id: datos.calEventId ?? null,
     };
-    setCitas(prev => [...arr<Cita>(prev), nuevaCita]);
+    await supabase.from('citas').insert(nuevaCita);
+    setCitas(prev => [...prev, toCita({ ...nuevaCita, creado_en: new Date().toISOString() })]);
     return citaId;
   }
 
-  function editarCita(citaId: string, datos: Partial<Cita>) {
-    setCitas(prev => arr<Cita>(prev).map(c =>
-      c.id === citaId ? { ...c, ...datos } : c
-    ));
+  async function editarCita(citaId: string, datos: Partial<Cita>) {
+    const update: any = {};
+    if (datos.clienteNombre)          update.cliente_nombre           = datos.clienteNombre;
+    if (datos.clienteTelefono)        update.cliente_telefono         = datos.clienteTelefono;
+    if (datos.clienteFechaNacimiento) update.cliente_fecha_nacimiento = datos.clienteFechaNacimiento;
+    if (datos.tipo)                   update.tipo                     = datos.tipo;
+    if (datos.modalidad)              update.modalidad                = datos.modalidad;
+    if (datos.fecha)                  update.fecha                    = datos.fecha;
+    if (datos.hora)                   update.hora                     = datos.hora;
+    if (datos.intencion !== undefined) update.intencion               = datos.intencion;
+    if (datos.precio)                 update.precio                   = datos.precio;
+    await supabase.from('citas').update(update).eq('id', citaId);
+    setCitas(prev => prev.map(c => c.id === citaId ? { ...c, ...datos } : c));
   }
 
-
-  function cancelarCita(citaId: string) {
-    setCitas(prev =>
-      (Array.isArray(prev) ? prev : []).map(c =>
-        c.id === citaId ? { ...c, estado: 'cancelada' as const } : c
-      )
-    );
+  async function completarCita(citaId: string) {
+    await supabase.from('citas').update({ estado: 'completada' }).eq('id', citaId);
+    setCitas(prev => prev.map(c => c.id === citaId ? { ...c, estado: 'completada' as const } : c));
   }
 
-  function eliminarCita(citaId: string) {
-    setCitas(prev => (Array.isArray(prev) ? prev : []).filter(c => c.id !== citaId));
+  async function cancelarCita(citaId: string) {
+    await supabase.from('citas').update({ estado: 'cancelada' }).eq('id', citaId);
+    setCitas(prev => prev.map(c => c.id === citaId ? { ...c, estado: 'cancelada' as const } : c));
   }
 
-  function completarCita(citaId: string) {
-    setCitas(prev => arr<Cita>(prev).map(c =>
-      c.id === citaId ? { ...c, estado: 'completada' as const } : c
-    ));
+  async function eliminarCita(citaId: string) {
+    await supabase.from('citas').delete().eq('id', citaId);
+    setCitas(prev => prev.filter(c => c.id !== citaId));
   }
 
   function getCitasDeCliente(clienteId: string): Cita[] {
-    return arr<Cita>(citas)
-      .filter(c => c.clienteId === clienteId)
+    return citas.filter(c => c.clienteId === clienteId)
       .sort((a, b) => b.fecha.localeCompare(a.fecha));
   }
 
   // ── NOTAS ─────────────────────────────────────────────────
 
-  function agregarNota(citaId: string, clienteId: string, texto: string): void {
+  async function agregarNota(citaId: string, clienteId: string, texto: string): Promise<void> {
     if (!texto.trim()) return;
-    const nueva: NotaSesion = {
-      id: generarId(),
-      citaId,
-      clienteId,
-      fecha: new Date().toISOString(),
-      texto: texto.trim(),
-      creadaEn: new Date().toISOString(),
+    const nueva = {
+      id: generarId(), cita_id: citaId, cliente_id: clienteId,
+      fecha: new Date().toISOString(), texto: texto.trim(),
     };
-    setNotas(prev => [...arr<NotaSesion>(prev), nueva]);
+    await supabase.from('notas').insert(nueva);
+    setNotas(prev => [...prev, toNota({ ...nueva, creado_en: nueva.fecha })]);
   }
 
   function getNotasDeCliente(clienteId: string): NotaSesion[] {
-    return arr<NotaSesion>(notas)
-      .filter(n => n.clienteId === clienteId)
-      .sort((a, b) => b.fecha.localeCompare(a.fecha));
+    return notas.filter(n => n.clienteId === clienteId)
+      .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
   }
 
   function getNotasDeCita(citaId: string): NotaSesion[] {
-    return arr<NotaSesion>(notas).filter(n => n.citaId === citaId);
+    return notas.filter(n => n.citaId === citaId);
   }
 
   // ── STATS ─────────────────────────────────────────────────
 
   function getStats() {
-    const citasArr    = arr<Cita>(citas);
-    const clientesArr = arr<Cliente>(clientes);
-    const hoy         = new Date();
-    const hoyStr      = hoy.toISOString().split('T')[0];
-    const inicioMes   = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().split('T')[0];
+    const hoy = new Date();
+    const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
     const inicioSemana = new Date(hoy);
     inicioSemana.setDate(hoy.getDate() - hoy.getDay());
-    const semanaStr   = inicioSemana.toISOString().split('T')[0];
+    const hoyStr = hoy.toISOString().split('T')[0];
 
-    const citasMes    = citasArr.filter(c => c.fecha >= inicioMes);
-    const citasSemana = citasArr.filter(c => c.fecha >= semanaStr);
+    const citasMes    = citas.filter(c => new Date(c.fecha) >= inicioMes);
+    const citasSemana = citas.filter(c => new Date(c.fecha) >= inicioSemana);
     const ingresosMes = citasMes.reduce((s, c) => s + c.precio, 0);
-    const clientesRepiten = clientesArr.filter(c => c.totalCitas > 1).length;
 
-    const proximasCitas = citasArr
+    const proximasCitas = citas
       .filter(c => c.estado === 'confirmada' && c.fecha >= hoyStr)
-      .sort((a, b) => a.fecha.localeCompare(b.fecha) || a.hora.localeCompare(b.hora));
+      .sort((a, b) => a.fecha.localeCompare(b.fecha));
 
     return {
-      totalClientes: clientesArr.length,
-      clientesRepiten,
-      citasSemana:   citasSemana.length,
-      citasMes:      citasMes.length,
+      totalClientes: clientes.length,
+      clientesRepiten: clientes.filter(c => c.totalCitas > 1).length,
+      citasSemana: citasSemana.length,
+      citasMes: citasMes.length,
       ingresosMes,
       proximasCitas,
     };
   }
 
   return {
-    clientes: arr<Cliente>(clientes),
-    citas:    arr<Cita>(citas),
-    notas:    arr<NotaSesion>(notas),
-    // clientes
-    editarCliente,
-    actualizarTagsCliente,
-    guardarResena,
-    getCliente,
-    // citas
-    agregarCita,
-    editarCita,
-    cancelarCita,
-    eliminarCita,
-    completarCita,
+    clientes, citas, notas, cargando,
+    getCliente, actualizarTagsCliente, guardarResena, editarCliente,
+    agregarCita, editarCita, completarCita, cancelarCita, eliminarCita,
     getCitasDeCliente,
-    // notas
-    agregarNota,
-    getNotasDeCliente,
-    getNotasDeCita,
-    // stats
+    agregarNota, getNotasDeCliente, getNotasDeCita,
     getStats,
   };
 }

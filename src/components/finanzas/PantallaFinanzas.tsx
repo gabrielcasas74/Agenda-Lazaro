@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { useLazaroStore } from '../../hooks/useLazaroStore';
 import { SERVICIOS } from '../../types';
 import { formatColones } from '../../utils';
 import { generarId } from '../../hooks/useLocalStorage';
+import { supabase } from '../../lib/supabase';
 
 type Store = ReturnType<typeof useLazaroStore>;
 
@@ -24,16 +25,17 @@ export function PantallaFinanzas({ store }: { store: Store }) {
   const [mostrarForm, setMostrarForm] = useState(false);
   const [formManual, setFormManual] = useState({ descripcion: '', monto: '', fecha: hoy.toISOString().split('T')[0] });
 
-  const [ingresosManual, setIngresosManual] = useState<IngresoManual[]>(() => {
-    try { return JSON.parse(localStorage.getItem('lazaro_ingresos_manual') ?? '[]'); } catch { return []; }
-  });
+  const [ingresosManual, setIngresosManual] = useState<IngresoManual[]>([]);
 
-  function guardarManual(items: IngresoManual[]) {
-    setIngresosManual(items);
-    localStorage.setItem('lazaro_ingresos_manual', JSON.stringify(items));
-  }
+  useEffect(() => {
+    supabase.from('ingresos_manual').select('*').order('fecha', { ascending: false })
+      .then(({ data }) => setIngresosManual((data ?? []).map((r: any) => ({
+        id: r.id, descripcion: r.descripcion, monto: r.monto,
+        fecha: r.fecha, creadoEn: r.creado_en,
+      }))));
+  }, []);
 
-  function agregarManual() {
+  async function agregarManual() {
     if (!formManual.descripcion || !formManual.monto || !formManual.fecha) return;
     const nuevo: IngresoManual = {
       id: generarId(),
@@ -42,13 +44,15 @@ export function PantallaFinanzas({ store }: { store: Store }) {
       fecha: formManual.fecha,
       creadoEn: new Date().toISOString(),
     };
-    guardarManual([...ingresosManual, nuevo]);
+    await supabase.from('ingresos_manual').insert({ id: nuevo.id, descripcion: nuevo.descripcion, monto: nuevo.monto, fecha: nuevo.fecha });
+    setIngresosManual(prev => [nuevo, ...prev]);
     setFormManual({ descripcion: '', monto: '', fecha: hoy.toISOString().split('T')[0] });
     setMostrarForm(false);
   }
 
-  function eliminarManual(id: string) {
-    guardarManual(ingresosManual.filter(i => i.id !== id));
+  async function eliminarManual(id: string) {
+    await supabase.from('ingresos_manual').delete().eq('id', id);
+    setIngresosManual(prev => prev.filter(i => i.id !== id));
   }
 
   const citasArr = Array.isArray(store.citas) ? store.citas : [];
