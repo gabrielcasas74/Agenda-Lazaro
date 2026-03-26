@@ -34,7 +34,7 @@ function toCita(r: any): Cita {
     fecha: r.fecha, hora: r.hora,
     intencion: r.intencion, estado: r.estado,
     precio: r.precio, notas: [],
-    creadoEn: r.creado_en,
+    creadaEn: r.creado_en,
     calEventId: r.cal_event_id,
   };
 }
@@ -98,7 +98,6 @@ export function useLazaroStore() {
     if (datos.telefono)        update.telefono         = datos.telefono;
     if (datos.fechaNacimiento) update.fecha_nacimiento = datos.fechaNacimiento;
     if (datos.modalidadUsual)  update.modalidad_usual  = datos.modalidadUsual;
-    if (datos.notas !== undefined) update.notas        = datos.notas;
     await supabase.from('clientes').update(update).eq('id', clienteId);
     setClientes(prev => prev.map(c => c.id === clienteId ? { ...c, ...datos } : c));
   }
