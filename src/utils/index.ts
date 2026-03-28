@@ -12,7 +12,9 @@ export function formatFecha(isoString: string): string {
 
 export function formatFechaCorta(isoString: string): string {
   if (!isoString) return '';
-  const fecha = new Date(isoString);
+  // Forzar mediodía para evitar desfase de timezone (UTC vs Costa Rica)
+  const str = isoString.includes('T') ? isoString : isoString + 'T12:00:00';
+  const fecha = new Date(str);
   return fecha.toLocaleDateString('es-CR', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
@@ -25,7 +27,7 @@ export function formatHora(hora: string): string {
 
 export function getSigno(fechaNacimiento: string): string {
   if (!fechaNacimiento) return '';
-  const fecha = new Date(fechaNacimiento);
+  const fecha = new Date(fechaNacimiento.includes('T') ? fechaNacimiento : fechaNacimiento + 'T12:00:00');
   const mes = fecha.getMonth() + 1;
   const dia = fecha.getDate();
   if ((mes === 3 && dia >= 21) || (mes === 4 && dia <= 19)) return 'Aries';
@@ -45,7 +47,7 @@ export function getSigno(fechaNacimiento: string): string {
 export function getEdad(fechaNacimiento: string): number {
   if (!fechaNacimiento) return 0;
   const hoy = new Date();
-  const nac = new Date(fechaNacimiento);
+  const nac = new Date(fechaNacimiento.includes('T') ? fechaNacimiento : fechaNacimiento + 'T12:00:00');
   let edad = hoy.getFullYear() - nac.getFullYear();
   const m = hoy.getMonth() - nac.getMonth();
   if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--;
