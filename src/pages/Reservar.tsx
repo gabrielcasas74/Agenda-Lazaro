@@ -5,8 +5,8 @@ const CAL_API_KEY = import.meta.env.VITE_CAL_API_KEY ?? '';
 const CAL_USERNAME = 'lazaro-tarot';
 
 const SERVICIOS = [
-  { id: 'breve', slug: 'lectura-breve', nombre: 'Consulta rápida', duracion: 15, precio: 8000, descripcion: 'Para una pregunta concreta', icono: '🔮' },
-  { id: 'completa', slug: 'lectura-completa', nombre: 'Lectura completa', duracion: 40, precio: 15000, descripcion: 'Amor, dinero, propósito y bloqueos', icono: '🃏' },
+  { id: 'breve', slug: '15minbreve', nombre: 'Consulta rápida', duracion: 15, precio: 8000, descripcion: 'Para una pregunta concreta', icono: '🔮' },
+  { id: 'completa', slug: '40min', nombre: 'Lectura completa', duracion: 40, precio: 15000, descripcion: 'Amor, dinero, propósito y bloqueos', icono: '🃏' },
 ];
 
 const TESTIMONIOS = [
