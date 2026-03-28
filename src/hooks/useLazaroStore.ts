@@ -92,22 +92,13 @@ export function useLazaroStore() {
     setClientes(prev => prev.map(c => c.id === clienteId ? { ...c, resena } : c));
   }
 
-  // 🔧 FIX #1: Cambiar if (X) por if (X !== undefined) para permitir guardados correctos
   async function editarCliente(clienteId: string, datos: Partial<Cliente>) {
     const update: any = {};
-    if (datos.nombre !== undefined)          update.nombre           = datos.nombre;
-    if (datos.telefono !== undefined)        update.telefono         = datos.telefono;
-    if (datos.fechaNacimiento !== undefined) update.fecha_nacimiento = datos.fechaNacimiento;
-    if (datos.modalidadUsual !== undefined)  update.modalidad_usual  = datos.modalidadUsual;
-    
-    console.log('[editarCliente] Actualizando:', { clienteId, update, datosRecibidos: datos });
-    
-    const { error } = await supabase.from('clientes').update(update).eq('id', clienteId);
-    if (error) {
-      console.error('[editarCliente] Error en Supabase:', error);
-      return;
-    }
-    
+    if (datos.nombre)          update.nombre           = datos.nombre;
+    if (datos.telefono)        update.telefono         = datos.telefono;
+    if (datos.fechaNacimiento) update.fecha_nacimiento = datos.fechaNacimiento;
+    if (datos.modalidadUsual)  update.modalidad_usual  = datos.modalidadUsual;
+    await supabase.from('clientes').update(update).eq('id', clienteId);
     setClientes(prev => prev.map(c => c.id === clienteId ? { ...c, ...datos } : c));
   }
 
@@ -165,49 +156,17 @@ export function useLazaroStore() {
     return citaId;
   }
 
-  // 🔧 FIX #2: Agregar lógica para actualizar totales si cambia el precio
   async function editarCita(citaId: string, datos: Partial<Cita>) {
-    const citaAnterior = citas.find(c => c.id === citaId);
-    if (!citaAnterior) {
-      console.warn('[editarCita] Cita no encontrada:', citaId);
-      return;
-    }
-
     const update: any = {};
-    if (datos.clienteNombre !== undefined)          update.cliente_nombre           = datos.clienteNombre;
-    if (datos.clienteTelefono !== undefined)        update.cliente_telefono         = datos.clienteTelefono;
-    if (datos.clienteFechaNacimiento !== undefined) update.cliente_fecha_nacimiento = datos.clienteFechaNacimiento;
-    if (datos.tipo !== undefined)                   update.tipo                     = datos.tipo;
-    if (datos.modalidad !== undefined)              update.modalidad                = datos.modalidad;
-    if (datos.fecha !== undefined)                  update.fecha                    = datos.fecha;
-    if (datos.hora !== undefined)                   update.hora                     = datos.hora;
-    if (datos.intencion !== undefined)              update.intencion                = datos.intencion;
-    if (datos.precio !== undefined)                 update.precio                   = datos.precio;
-
-    // ✨ NUEVO: Si cambia el precio, actualizar totales del cliente
-    if (datos.precio !== undefined && datos.precio !== citaAnterior.precio) {
-      const diferencia = datos.precio - citaAnterior.precio;
-      const cliente = clientes.find(c => c.id === citaAnterior.clienteId);
-      
-      if (cliente) {
-        console.log('[editarCita] Actualizando ingresos del cliente:', { 
-          clienteId: cliente.id, 
-          diferencia, 
-          anterior: cliente.totalIngresos,
-          nuevo: Math.max(0, cliente.totalIngresos + diferencia)
-        });
-        
-        await supabase.from('clientes').update({
-          total_ingresos: Math.max(0, cliente.totalIngresos + diferencia),
-        }).eq('id', cliente.id);
-        
-        setClientes(prev => prev.map(c => c.id === cliente.id
-          ? { ...c, totalIngresos: Math.max(0, c.totalIngresos + diferencia) }
-          : c
-        ));
-      }
-    }
-
+    if (datos.clienteNombre)          update.cliente_nombre           = datos.clienteNombre;
+    if (datos.clienteTelefono)        update.cliente_telefono         = datos.clienteTelefono;
+    if (datos.clienteFechaNacimiento) update.cliente_fecha_nacimiento = datos.clienteFechaNacimiento;
+    if (datos.tipo)                   update.tipo                     = datos.tipo;
+    if (datos.modalidad)              update.modalidad                = datos.modalidad;
+    if (datos.fecha)                  update.fecha                    = datos.fecha;
+    if (datos.hora)                   update.hora                     = datos.hora;
+    if (datos.intencion !== undefined) update.intencion               = datos.intencion;
+    if (datos.precio)                 update.precio                   = datos.precio;
     await supabase.from('citas').update(update).eq('id', citaId);
     setCitas(prev => prev.map(c => c.id === citaId ? { ...c, ...datos } : c));
   }
@@ -222,48 +181,8 @@ export function useLazaroStore() {
     setCitas(prev => prev.map(c => c.id === citaId ? { ...c, estado: 'cancelada' as const } : c));
   }
 
-  // 🔧 FIX #3: Decrementar totales del cliente cuando se elimina cita
   async function eliminarCita(citaId: string) {
-    const cita = citas.find(c => c.id === citaId);
-    
-    if (!cita) {
-      console.warn('[eliminarCita] Cita no encontrada:', citaId);
-      return;
-    }
-
-    const cliente = clientes.find(c => c.id === cita.clienteId);
-
-    // Paso 1: Eliminar de BD
     await supabase.from('citas').delete().eq('id', citaId);
-
-    // Paso 2: Actualizar totales del cliente en BD
-    if (cliente) {
-      const nuevosTotales = {
-        total_citas:    Math.max(0, cliente.totalCitas - 1),
-        total_ingresos: Math.max(0, cliente.totalIngresos - cita.precio),
-      };
-      
-      console.log('[eliminarCita] Actualizando cliente:', {
-        clienteId: cliente.id,
-        citaEliminada: { id: cita.id, precio: cita.precio },
-        totalesAnteriores: { citas: cliente.totalCitas, ingresos: cliente.totalIngresos },
-        totalesNuevos: nuevosTotales,
-      });
-
-      await supabase.from('clientes').update(nuevosTotales).eq('id', cliente.id);
-      
-      // Paso 3: Actualizar estado local
-      setClientes(prev => prev.map(c => c.id === cliente.id
-        ? { 
-            ...c, 
-            totalCitas: nuevosTotales.total_citas, 
-            totalIngresos: nuevosTotales.total_ingresos 
-          }
-        : c
-      ));
-    }
-
-    // Paso 4: Eliminar de estado local
     setCitas(prev => prev.filter(c => c.id !== citaId));
   }
 

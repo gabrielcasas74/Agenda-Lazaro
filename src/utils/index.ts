@@ -84,36 +84,15 @@ const ARCANOS: Record<number, string> = {
   22: 'El Loco',
 };
 
-// 🔧 FIX: 
-// 1) Agregar "T12:00:00" para evitar desfase de timezone como en getSigno() y getEdad()
-// 2) Cambiar while a if para aplicar la fórmula correcta:
-//    - Si total > 22, sumar cifras una sola vez
-//    - Si total <= 22, ese es el arcano
 export function calcularArcano(fechaNacimiento: string): { numero: number; nombre: string } {
   if (!fechaNacimiento) return { numero: 0, nombre: '' };
-  
-  // Forzar mediodía para evitar desfase de timezone
-  const str = fechaNacimiento.includes('T') ? fechaNacimiento : fechaNacimiento + 'T12:00:00';
-  const fecha = new Date(str);
-  
-  // Paso 1: Sumar cifras de DD
-  const dia = sumarCifras(fecha.getDate());
-  
-  // Paso 2: Sumar cifras de MM
-  const mes = sumarCifras(fecha.getMonth() + 1);
-  
-  // Paso 3: Sumar cifras de AAAA
-  const anio = sumarCifras(fecha.getFullYear());
+  const fecha = new Date(fechaNacimiento);
+  const dia  = sumarCifras(fecha.getDate());
+  const mes  = sumarCifras(fecha.getMonth() + 1);
+  const anio = sumarCifras(fecha.getFullYear()); // una sola reducción
 
-  // Paso 4: Sumar 1) + 2) + 3)
   let total = dia + mes + anio;
-  
-  // Paso 5: Si > 22, sumar cifras. Si <= 22, ese es el arcano
-  if (total > 22) {
-    total = sumarCifras(total);
-  }
-
-  console.log(`[calcularArcano] ${fechaNacimiento} → día=${dia}, mes=${mes}, año=${anio}, total=${total}, arcano=${ARCANOS[total] || 'no encontrado'}`);
+  while (total > 22) total = sumarCifras(total);
 
   return { numero: total, nombre: ARCANOS[total] ?? '' };
 }
@@ -122,9 +101,7 @@ export function calcularArcano(fechaNacimiento: string): { numero: number; nombr
 
 export function descargarICS(nombre: string, fechaNacimiento: string): void {
   if (!fechaNacimiento) return;
-  // Forzar mediodía para evitar desfase de timezone
-  const str = fechaNacimiento.includes('T') ? fechaNacimiento : fechaNacimiento + 'T12:00:00';
-  const fecha = new Date(str);
+  const fecha = new Date(fechaNacimiento);
   const mes   = String(fecha.getMonth() + 1).padStart(2, '0');
   const dia   = String(fecha.getDate()).padStart(2, '0');
   const anioActual = new Date().getFullYear();
