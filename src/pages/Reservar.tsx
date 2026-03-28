@@ -99,8 +99,8 @@ export function Reservar() {
       const params = new URLSearchParams({
         eventTypeSlug: slug,
         username: CAL_USERNAME,
-        startTime: hoy.toISOString(),
-        endTime: fin.toISOString(),
+        start: hoy.toISOString(),
+        end: fin.toISOString(),
         timeZone: 'America/Costa_Rica',
       });
 
