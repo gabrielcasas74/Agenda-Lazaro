@@ -10,6 +10,7 @@ interface Props {
 export function ResenaIA({ cliente, onGuardar }: Props) {
   const [generando, setGenerando] = useState(false);
   const [error, setError] = useState('');
+  const [regenerando, setRegenerando] = useState(false);
 
   const signo   = getSigno(cliente.fechaNacimiento);
   const arcano  = calcularArcano(cliente.fechaNacimiento);
@@ -53,6 +54,7 @@ Reseña esotérica:`;
       }
       if (!data.texto) throw new Error('Respuesta vacía del servidor');
       onGuardar(data.texto.trim());
+      setRegenerando(false);
     } catch (e: any) {
       setError(e.message ?? 'Error desconocido');
     } finally {
@@ -81,19 +83,39 @@ Reseña esotérica:`;
       </div>
 
       {yatiene ? (
-        <div style={{
-          background: 'var(--bg-surface)',
-          border: '1px solid var(--border)',
-          borderLeft: '3px solid var(--gold-dim)',
-          borderRadius: '0 8px 8px 0',
-          padding: '14px 16px',
-        }}>
-          <p className="font-serif" style={{
-            fontSize: 15, color: 'var(--text-primary)',
-            lineHeight: 1.75, fontStyle: 'italic',
+        <div>
+          <div style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border)',
+            borderLeft: '3px solid var(--gold-dim)',
+            borderRadius: '0 8px 8px 0',
+            padding: '14px 16px',
+            marginBottom: 12,
           }}>
-            {cliente.resena}
-          </p>
+            <p className="font-serif" style={{
+              fontSize: 15, color: 'var(--text-primary)',
+              lineHeight: 1.75, fontStyle: 'italic',
+            }}>
+              {cliente.resena}
+            </p>
+          </div>
+          
+          {/* 🔧 FIX: Botón para regenerar reseña con el nuevo arcano */}
+          <button
+            className="btn-ghost"
+            onClick={() => {
+              setRegenerando(true);
+              generar();
+            }}
+            disabled={generando || !cliente.fechaNacimiento}
+            style={{ 
+              fontSize: 12, 
+              opacity: generando ? 0.7 : 1,
+              width: '100%',
+            }}
+          >
+            {generando ? 'Regenerando reseña...' : '↻ Regenerar reseña con IA'}
+          </button>
         </div>
       ) : (
         <div>
