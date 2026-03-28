@@ -6,9 +6,10 @@ import { PantallaCitas } from './components/citas/PantallaCitas';
 import { PantallaClientes } from './components/clientes/PantallaClientes';
 import { PantallaConfig } from './components/config/PantallaConfig';
 import { PantallaFinanzas } from './components/finanzas/PantallaFinanzas';
+import { PantallaMEP } from './components/mep/PantallaMEP';
 import { PantallaContabilidad } from './components/contabilidad/PantallaContabilidad';
 
-type Pantalla = 'citas' | 'clientes' | 'finanzas' | 'contabilidad' | 'config';
+type Pantalla = 'citas' | 'clientes' | 'finanzas' | 'contabilidad' | 'mep' | 'config';
 
 export default function App() {
   const { user, cargando: authCargando, signIn, signOut } = useAuth();
@@ -36,6 +37,7 @@ export default function App() {
     { id: 'clientes',     label: 'Clientes' },
     { id: 'finanzas',     label: 'Finanzas' },
     { id: 'contabilidad', label: 'Contabilidad' },
+    { id: 'mep',          label: 'MEP' },
     { id: 'config',       label: 'Mi link' },
   ];
 
@@ -87,6 +89,7 @@ export default function App() {
             {pantalla === 'clientes'     && <PantallaClientes store={store} onVerCita={() => setPantalla('citas')} />}
             {pantalla === 'finanzas'     && <PantallaFinanzas store={store} />}
             {pantalla === 'contabilidad' && <PantallaContabilidad />}
+            {pantalla === 'mep'          && <PantallaMEP />}
             {pantalla === 'config'       && <PantallaConfig />}
           </>
         )}
