@@ -105,7 +105,7 @@ export function Reservar() {
       });
 
       const res = await fetch(
-        `https://api.cal.com/v2/slots/available?${params}`,
+        `https://api.cal.com/v2/slots?${params}`,
         { headers: { 'cal-api-version': '2024-09-04' } }
       );
       const data = await res.json();
