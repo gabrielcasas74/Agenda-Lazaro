@@ -111,11 +111,11 @@ export function Reservar() {
       const data = await res.json();
       console.log('Slots response:', data);
 
-      const slotsObj = data?.data?.slots ?? {};
+      const slotsObj = data?.data ?? {};
       const dias: DiaSlots[] = Object.entries(slotsObj)
         .map(([date, arr]: [string, any]) => ({
           date,
-          slots: Array.isArray(arr) ? arr.map((s: any) => ({ time: s.time })) : [],
+          slots: Array.isArray(arr) ? arr.map((s: any) => ({ time: s.start })) : [],
         }))
         .filter(d => d.slots.length > 0)
         .sort((a, b) => a.date.localeCompare(b.date))
