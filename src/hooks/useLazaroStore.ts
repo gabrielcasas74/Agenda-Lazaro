@@ -114,7 +114,11 @@ export function useLazaroStore() {
 
     // Upsert cliente
     let clienteId = '';
-    const existente = clientes.find(c => c.telefono === datos.clienteTelefono);
+    // Buscar cliente existente por teléfono (si tiene) o por nombre exacto
+    const existente = clientes.find(c =>
+      (datos.clienteTelefono && c.telefono && c.telefono === datos.clienteTelefono) ||
+      (c.nombre.toLowerCase().trim() === datos.clienteNombre.toLowerCase().trim())
+    );
 
     if (existente) {
       clienteId = existente.id;

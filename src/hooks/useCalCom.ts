@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { TipoLectura, Modalidad } from '../types';
 
 const CAL_API_KEY = import.meta.env.VITE_CAL_API_KEY ?? '';
-const CAL_API_BASE = 'https://api.cal.com/v1';
+const CAL_API_BASE = 'https://api.cal.com/v2';
 
 interface CalBooking {
   id: number;
@@ -70,8 +70,8 @@ export function useCalCom() {
     setError('');
 
     try {
-      const url = `${CAL_API_BASE}/bookings?apiKey=${CAL_API_KEY}&status=upcoming`;
-      const res = await fetch(url);
+      const url = `${CAL_API_BASE}/bookings?status=upcoming`;
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${CAL_API_KEY}`, 'cal-api-version': '2024-08-13' } });
 
       if (!res.ok) {
         const body = await res.text();
@@ -79,7 +79,7 @@ export function useCalCom() {
       }
 
       const data = await res.json();
-      const lista: CalBooking[] = data.bookings ?? [];
+      const lista: CalBooking[] = data.data ?? data.bookings ?? [];
 
       return lista.map(b => {
         const attendee  = b.attendees?.[0];

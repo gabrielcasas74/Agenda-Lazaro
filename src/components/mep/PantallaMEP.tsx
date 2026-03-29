@@ -163,58 +163,33 @@ export function PantallaMEP() {
     setEventosIA([]);
 
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await fetch('/api/mep-ia', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 2000,
-          messages: [{
-            role: 'user',
-            content: `Eres un asistente que extrae eventos de calendarios educativos costarricenses MEP.
-Dado el siguiente texto, extrae SOLO los eventos relevantes para un docente de Educación Religiosa en secundaria (colegios: CTP Dos Cercas, Liceo Aserrí, República de Panamá).
-
-Prioriza: periodos lectivos, feriados, semanas especiales, fechas de entrega de notas, actos cívicos, semanas religiosas.
-
-Responde ÚNICAMENTE con un JSON válido (sin markdown, sin texto extra):
-[
-  {
-    "titulo": "...",
-    "fechaInicio": "YYYY-MM-DD",
-    "fechaFin": "YYYY-MM-DD o null",
-    "categoria": "Periodos Lectivos|Efemérides y otras celebraciones|Administrativo y docente|Pruebas de Educación Formal",
-    "descripcion": "...",
-    "destacado": true/false
-  }
-]
-
-Texto del calendario:
-${textoIA.slice(0, 4000)}`
-          }]
-        })
+        body: JSON.stringify({ texto: textoIA }),
       });
 
       const data = await res.json();
-      const texto = data.content?.[0]?.text ?? '[]';
 
-      try {
-        const parsed = JSON.parse(texto.replace(/```json|```/g, '').trim());
-        const nuevos: EventoMEP[] = parsed.map((e: any, i: number) => ({
-          id: `ia_${Date.now()}_${i}`,
-          titulo: e.titulo ?? '',
-          fechaInicio: e.fechaInicio ?? '',
-          fechaFin: e.fechaFin ?? undefined,
-          categoria: e.categoria ?? 'Efemérides y otras celebraciones',
-          descripcion: e.descripcion ?? '',
-          colegio: 'todos',
-          destacado: e.destacado ?? false,
-        })).filter((e: EventoMEP) => e.titulo && e.fechaInicio);
-        setEventosIA(nuevos);
-        const ids = new Set(nuevos.map(e => e.id));
-        setSeleccionados(ids);
-      } catch {
-        setEventosIA([]);
+      if (data.error) {
+        console.error('Error IA:', data.error);
+        setProcesandoIA(false);
+        return;
       }
+
+      const nuevos: EventoMEP[] = (data.eventos ?? []).map((e: any, i: number) => ({
+        id: `ia_${Date.now()}_${i}`,
+        titulo: e.titulo ?? '',
+        fechaInicio: e.fechaInicio ?? '',
+        fechaFin: e.fechaFin && e.fechaFin !== 'null' ? e.fechaFin : undefined,
+        categoria: e.categoria ?? 'Efemérides y otras celebraciones',
+        descripcion: e.descripcion ?? '',
+        colegio: 'todos',
+        destacado: e.destacado ?? false,
+      })).filter((e: EventoMEP) => e.titulo && e.fechaInicio);
+
+      setEventosIA(nuevos);
+      setSeleccionados(new Set(nuevos.map(e => e.id)));
     } catch (err) {
       console.error('Error IA:', err);
     } finally {
