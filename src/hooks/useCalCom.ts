@@ -6,7 +6,10 @@ const CAL_API_BASE = 'https://api.cal.com/v2';
 
 interface CalBooking {
   id: number;
+  uid?: string;
   title: string;
+  start?: string;
+  end?: string;
   startTime: string;
   endTime: string;
   status: string;
@@ -84,25 +87,39 @@ export function useCalCom() {
       return lista.map(b => {
         const attendee  = b.attendees?.[0];
         const resp      = b.responses ?? {};
-        const inicio    = new Date(b.startTime);
-        const fin       = new Date(b.endTime);
-        const duracion  = (fin.getTime() - inicio.getTime()) / 60000;
 
-        // Identificadores exactos configurados en Cal.com
-        const telefono    = resp['attendeePhoneNumber']?.value ?? '';
-        const nacimiento  = resp['title']?.value ?? '';
-        const intencion   = resp['notes']?.value ?? '';
+        // v2 puede devolver 'start'/'end' o 'startTime'/'endTime'
+        const startRaw = (b as any).start ?? b.startTime ?? '';
+        const endRaw   = (b as any).end   ?? b.endTime   ?? '';
+
+        const inicio = startRaw ? new Date(startRaw) : new Date();
+        const fin    = endRaw   ? new Date(endRaw)   : new Date(inicio.getTime() + 60 * 60000);
+        const duracion = isNaN(inicio.getTime()) || isNaN(fin.getTime())
+          ? 40
+          : (fin.getTime() - inicio.getTime()) / 60000;
+
+        const telefono   = resp['attendeePhoneNumber']?.value ?? '';
+        const nacimiento = resp['title']?.value ?? '';
+        const intencion  = resp['notes']?.value ?? '';
+
+        // Fecha y hora en zona Costa Rica
+        const fechaStr = isNaN(inicio.getTime())
+          ? startRaw.slice(0, 10)
+          : inicio.toLocaleDateString('en-CA', { timeZone: 'America/Costa_Rica' });
+        const horaStr = isNaN(inicio.getTime())
+          ? '00:00'
+          : inicio.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Costa_Rica' });
 
         return {
-          calEventId:             String(b.id),
+          calEventId:             String(b.uid ?? b.id),
           clienteNombre:          attendee?.name ?? '',
           clienteTelefono:        Array.isArray(telefono) ? telefono.join('') : String(telefono),
           clienteFechaNacimiento: Array.isArray(nacimiento) ? nacimiento.join('') : String(nacimiento),
           intencion:              Array.isArray(intencion) ? intencion.join('') : String(intencion),
           tipo:                   detectarTipo(duracion),
           modalidad:              detectarModalidad(resp),
-          fecha:                  inicio.toISOString().split('T')[0],
-          hora:                   `${String(inicio.getHours()).padStart(2, '0')}:${String(inicio.getMinutes()).padStart(2, '0')}`,
+          fecha:                  fechaStr,
+          hora:                   horaStr,
         };
       });
 
