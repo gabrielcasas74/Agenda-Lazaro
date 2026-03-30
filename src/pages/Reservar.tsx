@@ -15,7 +15,7 @@ const TESTIMONIOS = [
   { texto: 'Una experiencia transformadora.' },
 ];
 
-type Paso = 'hero' | 'servicio' | 'fecha' | 'datos' | 'confirmado';
+type Paso = 'hero' | 'servicio' | 'fecha' | 'datos' | 'comprobante' | 'confirmado';
 interface Slot { time: string; }
 interface DiaSlots { date: string; slots: Slot[]; }
 
@@ -46,6 +46,7 @@ function PasoIndicador({ pasoActual }: { pasoActual: Paso }) {
     { id: 'servicio', label: 'Servicio' },
     { id: 'fecha', label: 'Fecha' },
     { id: 'datos', label: 'Datos' },
+    { id: 'comprobante', label: 'Pago' },
     { id: 'confirmado', label: 'Confirmación' },
   ];
   const idx = pasos.findIndex(p => p.id === pasoActual);
@@ -84,6 +85,7 @@ export function Reservar() {
   const [errorSlots, setErrorSlots] = useState('');
   const [form, setForm] = useState({ nombre: '', email: '', telefono: '', nacimiento: '', intencion: '' });
   const [enviando, setEnviando] = useState(false);
+  const [comprobanteEnviado, setComprobanteEnviado] = useState(false);
   const [errorBooking, setErrorBooking] = useState('');
 
   // ── Cal.com v2: Slots ─────────────────────────────────────
@@ -385,7 +387,7 @@ export function Reservar() {
 
           {[
             { campo: 'nombre',    label: 'Tu nombre',           placeholder: 'Nombre completo',  type: 'text',  required: true },
-            { campo: 'email',     label: 'Correo electrónico',  placeholder: 'tu@correo.com',    type: 'email', required: true },
+            { campo: 'email',     label: 'Correo electrónico',  placeholder: 'tu@correo.com (opcional)',    type: 'email', required: false },
             { campo: 'telefono',  label: 'WhatsApp (+506)',      placeholder: '8888-8888',        type: 'tel',   required: false },
             { campo: 'nacimiento',label: 'Fecha de nacimiento', placeholder: 'dd/mm/aaaa',       type: 'text',  required: false },
           ].map(f => (
@@ -416,14 +418,87 @@ export function Reservar() {
             </p>
           )}
 
-          <button style={{ ...btnP, opacity: form.nombre && form.email ? 1 : 0.4 }}
-disabled={!form.nombre || !form.email || enviando}
+          <button style={{ ...btnP, opacity: form.nombre ? 1 : 0.4 }}
+            disabled={!form.nombre || enviando}
             onClick={confirmarCita}>
-            {enviando ? 'Confirmando...' : '📅 Confirmar cita'}
+            Continuar al pago →
           </button>
-          <p style={{ textAlign: 'center', fontSize: 12, color: '#8a7fa0', marginTop: 10 }}>
-            🔒 Pago solicitado después de confirmar.
+          <div style={{ marginTop: 12 }}><BtnWA /></div>
+        </div>
+      )}
+
+
+      {/* ── COMPROBANTE ── */}
+      {paso === 'comprobante' && (
+        <div style={card}>
+          <h2 style={{ fontFamily: 'EB Garamond, serif', fontSize: 22, color: '#1a0f2e', marginBottom: 8, fontWeight: 400 }}>
+            Pago de la lectura
+          </h2>
+          <p style={{ fontFamily: 'Lato, sans-serif', fontSize: 13, color: '#5a4060', marginBottom: '1.25rem', lineHeight: 1.6 }}>
+            Para confirmar tu cita, realizá el pago por SINPE Móvil y enviame el comprobante por WhatsApp.
           </p>
+
+          {/* Datos de pago */}
+          <div style={{ background: '#faf8ff', borderRadius: 14, padding: '1rem', border: '1.5px solid #c9b8e8', marginBottom: '1.25rem' }}>
+            <p style={{ fontFamily: 'Cinzel, serif', fontSize: 11, color: '#8a6a1f', letterSpacing: '0.1em', marginBottom: 10 }}>DATOS DE PAGO</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+              <span style={{ fontFamily: 'Lato, sans-serif', fontSize: 13, color: '#8a7fa0' }}>Servicio</span>
+              <span style={{ fontFamily: 'Lato, sans-serif', fontSize: 13, fontWeight: 700, color: '#1a0f2e' }}>{servicioSel?.nombre}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+              <span style={{ fontFamily: 'Lato, sans-serif', fontSize: 13, color: '#8a7fa0' }}>Monto</span>
+              <span style={{ fontFamily: 'Cinzel, serif', fontSize: 15, fontWeight: 700, color: '#4a3270' }}>₡{servicioSel?.precio.toLocaleString('es-CR')}</span>
+            </div>
+            <div style={{ borderTop: '1px solid #e8e0f0', paddingTop: 10, marginTop: 4 }}>
+              <p style={{ fontFamily: 'Lato, sans-serif', fontSize: 12, color: '#8a7fa0', marginBottom: 4 }}>SINPE Móvil al número:</p>
+              <p style={{ fontFamily: 'Cinzel, serif', fontSize: 20, color: '#4a3270', fontWeight: 700, letterSpacing: '0.05em' }}>+506 6066-8021</p>
+              <p style={{ fontFamily: 'Lato, sans-serif', fontSize: 12, color: '#8a7fa0', marginTop: 4 }}>A nombre de: Gabriel Casas</p>
+            </div>
+          </div>
+
+          {/* Botón enviar comprobante por WhatsApp */}
+          <p style={{ fontFamily: 'Lato, sans-serif', fontSize: 13, color: '#5a4060', marginBottom: 12, lineHeight: 1.5 }}>
+            Una vez que hagas el pago, enviame el comprobante por WhatsApp con el botón de abajo:
+          </p>
+
+          <a
+            href={`https://wa.me/50660668021?text=${encodeURIComponent(`Hola Lázaro 🙏 Te envío el comprobante de pago para mi lectura.
+
+📋 *${servicioSel?.nombre}* — ${fmtDia(diaSel)} a las ${fmtHora(horaSel)}
+👤 ${form.nombre}
+
+_(adjunto imagen del comprobante)_`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setComprobanteEnviado(true)}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              background: '#25D366', color: '#fff', borderRadius: 50,
+              padding: '14px 24px', fontSize: 15, fontWeight: 700,
+              textDecoration: 'none', width: '100%', boxSizing: 'border-box' as const,
+              fontFamily: 'Lato, sans-serif', marginBottom: 12,
+            }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+              <path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.556 4.122 1.528 5.857L0 24l6.335-1.502A11.942 11.942 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.794 9.794 0 01-5.003-1.374l-.36-.213-3.722.882.938-3.618-.235-.372A9.774 9.774 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/>
+            </svg>
+            Enviar comprobante por WhatsApp
+          </a>
+
+          {/* Confirmar cita */}
+          <button
+            style={{ ...btnP, opacity: comprobanteEnviado ? 1 : 0.45, marginBottom: 8 }}
+            disabled={!comprobanteEnviado || enviando}
+            onClick={confirmarCita}>
+            {enviando ? 'Confirmando...' : '📅 Confirmar mi cita'}
+          </button>
+
+          {!comprobanteEnviado && (
+            <p style={{ textAlign: 'center', fontSize: 12, color: '#8a7fa0', fontFamily: 'Lato, sans-serif' }}>
+              Primero enviá el comprobante para habilitar este botón.
+            </p>
+          )}
+
           <div style={{ marginTop: 12 }}><BtnWA /></div>
         </div>
       )}
