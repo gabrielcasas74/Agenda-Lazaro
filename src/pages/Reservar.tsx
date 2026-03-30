@@ -385,7 +385,7 @@ export function Reservar() {
 
           {[
             { campo: 'nombre',    label: 'Tu nombre',           placeholder: 'Nombre completo',  type: 'text',  required: true },
-            { campo: 'email',     label: 'Correo electrónico',  placeholder: 'tu@correo.com (opcional)',    type: 'email', required: false },
+            { campo: 'email',     label: 'Correo electrónico',  placeholder: 'tu@correo.com',    type: 'email', required: true },
             { campo: 'telefono',  label: 'WhatsApp (+506)',      placeholder: '8888-8888',        type: 'tel',   required: false },
             { campo: 'nacimiento',label: 'Fecha de nacimiento', placeholder: 'dd/mm/aaaa',       type: 'text',  required: false },
           ].map(f => (
@@ -416,8 +416,8 @@ export function Reservar() {
             </p>
           )}
 
-          <button style={{ ...btnP, opacity: form.nombre ? 1 : 0.4 }}
-            disabled={!form.nombre || enviando}
+          <button style={{ ...btnP, opacity: form.nombre && form.email ? 1 : 0.4 }}
+disabled={!form.nombre || !form.email || enviando}
             onClick={confirmarCita}>
             {enviando ? 'Confirmando...' : '📅 Confirmar cita'}
           </button>
