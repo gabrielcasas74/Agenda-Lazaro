@@ -11,7 +11,7 @@ interface Props {
 export function NuevaCitaForm({ onGuardar }: Props) {
   const [form, setForm] = useState({
     clienteNombre: '', clienteTelefono: '', clienteFechaNacimiento: '',
-    tipo: 'completa' as TipoLectura, modalidad: 'presencial' as Modalidad,
+    tipo: 'completa' as TipoLectura, modalidad: 'virtual' as Modalidad,
     fecha: '', hora: '', intencion: '',
   });
   const set = (campo: string, valor: string) => setForm(prev => ({ ...prev, [campo]: valor }));
@@ -48,7 +48,6 @@ export function NuevaCitaForm({ onGuardar }: Props) {
         <div style={{ marginBottom: 12 }}>
           <label style={lbl}>Modalidad</label>
           <select value={form.modalidad} onChange={e => set('modalidad', e.target.value)}>
-            <option value="presencial">Presencial (sábado)</option>
             <option value="virtual">Virtual (llamada / video)</option>
           </select>
         </div>
